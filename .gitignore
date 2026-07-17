@@ -1,0 +1,33 @@
+# ===== CMake =====
+build/
+out/
+cmake-build-*/
+
+# ===== C/C++ =====
+*.o
+*.obj
+# *.a
+*.so
+*.exe
+
+# ===== VSCode =====
+.vscode/
+
+# ===== Keil =====
+*.uvguix.*
+*.uvoptx
+*.uvprojx
+Objects/
+Listings/
+
+# ===== ESP-IDF =====
+build/
+sdkconfig.old
+
+# ===== Python =====
+__pycache__/
+*.pyc
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
