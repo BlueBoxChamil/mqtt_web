@@ -9,4 +9,7 @@ add_library(${LIB_NAME} STATIC ${LIB_SOURCES})
 # 如果你有头文件需要导出，可以加上：
 target_include_directories(${LIB_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(${LIB_NAME} PUBLIC my_queue pthread my_device_manager)
+target_link_libraries(${LIB_NAME}  PUBLIC 
+                        mongoose
+                        pthread
+                        my_device_manager)

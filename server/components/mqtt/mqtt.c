@@ -9,15 +9,16 @@
 
 #include "mqtt.h"
 
-#define MQTT_ADDRESS "tcp://192.168.164.128:1883"
+#define MQTT_ADDRESS "tcp://192.168.12.171:1883"
 #define MQTT_CLIENT_ID "linux_mqtt_client_001"
 #define MQTT_USERNAME "user2"
 #define MQTT_PASSWORD "2"
 // #define MQTT_SUB_TOPIC "device/1/state"
 static const char *sub_topics[] = {
-    "device/1/state",
-    "device/1/cmd",
-    "device/1/info"};
+    "device/1/state", // 设备 → 服务器 上报当前状态
+    //"device/1/cmd",  // 服务器 → 设备 下发控制命令,server 不用订阅
+    "device/1/info",  // 设备 → 服务器 设备信息注册
+};
 
 static MQTTClient client;
 

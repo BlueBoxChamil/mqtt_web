@@ -13,6 +13,8 @@
 #include "mqtt.h"
 #include "my_queue.h"
 #include "my_thread.h"
+#include "my_device_manager.h"
+#include "my_web_server.h"
 
 // 要实现的功能，在c的工程中调用一个c++生成的库
 int main()
@@ -21,7 +23,9 @@ int main()
 
     my_queue_init();
     my_thread_init();
+    my_device_manager_init();
     mqtt_init();
+    my_web_server_init();
 
     while (1)
     {

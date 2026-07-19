@@ -20,7 +20,7 @@ extern "C"
 #include <unistd.h>
 #include <pthread.h>
 #include "my_queue.h"
-#include "cJSON.h"
+#include "my_device_manager.h"
 
     void my_thread_init(void);
 
