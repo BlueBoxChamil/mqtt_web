@@ -1,7 +1,7 @@
 /*
  * @Author: error: git config user.name & please set dead value or install git
  * @Date: 2026-07-20 09:13:18
- * @LastEditTime: 2026-07-20 17:06:12
+ * @LastEditTime: 2026-07-20 17:21:32
  * @FilePath: /components/my_web_server/my_web_server.c
  * @Description:
  * Copyright (c) 2026 by error: git config user.name & please set dead value or install git, All Rights Reserved.
@@ -45,6 +45,7 @@ int my_web_queue_pop(web_msg_t *msg)
         ret = 0;
     }
     pthread_mutex_unlock(&web_mutex);
+    return ret;
 }
 
 static uint32_t parse_id(struct mg_str id)
@@ -210,16 +211,16 @@ static void *web_task(void *arg)
     while (1)
     {
         mg_mgr_poll(&mgr, 10);
-        // web_msg_t msg;
 
-        // while (my_web_queue_pop(&msg) == 0)
-        // {
-        //     if (ws_client)
-        //     {
-        //         printf("into ws_client\n");
-        //         mg_ws_send(ws_client, msg.data, strlen(msg.data), WEBSOCKET_OP_TEXT);
-        //     }
-        // }
+        web_msg_t msg;
+        while (my_web_queue_pop(&msg) == 0)
+        {
+            if (ws_client)
+            {
+                // printf("into ws_client\n");
+                mg_ws_send(ws_client, msg.data, strlen(msg.data), WEBSOCKET_OP_TEXT);
+            }
+        }
     }
 
     mg_mgr_free(&mgr);
@@ -229,13 +230,13 @@ static void *web_task(void *arg)
 
 void my_web_server_notify(const char *json)
 {
-    printf("into my_web_server_notify\n");
-    // my_web_queue_push(json);
-    if (ws_client)
-    {
-        printf("into ws_client\n");
-        mg_ws_send(ws_client, json, strlen(json), WEBSOCKET_OP_TEXT);
-    }
+    // printf("into my_web_server_notify\n");
+    my_web_queue_push(json);
+    // if (ws_client)
+    // {
+    //     printf("into ws_client\n");
+    //     mg_ws_send(ws_client, json, strlen(json), WEBSOCKET_OP_TEXT);
+    // }
 }
 
 void my_web_server_init(void)
