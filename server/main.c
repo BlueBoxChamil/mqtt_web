@@ -1,7 +1,7 @@
 /*
  * @Author: BlueboxChamil
  * @Date: 2026-07-17 11:18:21
- * @LastEditTime: 2026-07-17 16:27:54
+ * @LastEditTime: 2026-07-20 15:19:53
  * @FilePath: /main.c
  * @Description:
  * Copyright (c) 2026 by BlueboxChamil, All Rights Reserved.
@@ -9,10 +9,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#include "mqtt.h"
-#include "my_queue.h"
-#include "my_thread.h"
+#include "my_mqtt.h"
 #include "my_device_manager.h"
 #include "my_web_server.h"
 
@@ -21,10 +20,8 @@ int main()
 {
     printf("Hello, from myPro!\n");
 
-    my_queue_init();
-    my_thread_init();
+    my_mqtt_init();
     my_device_manager_init();
-    mqtt_init();
     my_web_server_init();
 
     while (1)
