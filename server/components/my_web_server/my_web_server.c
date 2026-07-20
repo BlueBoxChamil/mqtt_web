@@ -79,10 +79,10 @@ static void api_device_list(struct mg_connection *c)
     mg_http_reply(
         c,
         200,
-        "Content-Type: application/json\r\n",
+        "Content-Type: application/json\r\n"
+        "Access-Control-Allow-Origin: *\r\n",
         "%s",
         json);
-    free(json);
     cJSON_Delete(array);
 }
 
@@ -93,7 +93,7 @@ static void api_device_get(struct mg_connection *c, struct mg_str id)
 
     if (my_device_manager_get(device_id, &device) != 0)
     {
-        mg_http_reply(c, 404, "", "device not found");
+        mg_http_reply(c, 404, "Access-Control-Allow-Origin: *\r\n", "device not found");
         return;
     }
     cJSON *root = cJSON_CreateObject();
@@ -107,7 +107,8 @@ static void api_device_get(struct mg_connection *c, struct mg_str id)
     mg_http_reply(
         c,
         200,
-        "Content-Type: application/json\r\n",
+        "Content-Type: application/json\r\n"
+        "Access-Control-Allow-Origin: *\r\n",
         "%s",
         json);
     free(json);
@@ -123,11 +124,11 @@ static void api_device_cmd(
     printf("device_id = %d\n", device_id);
     if (my_device_manager_send_cmd(device_id, hm->body.buf) == 0)
     {
-        mg_http_reply(c, 200, "", "ok");
+        mg_http_reply(c, 200, "Access-Control-Allow-Origin: *\r\n", "ok");
     }
     else
     {
-        mg_http_reply(c, 500, "", "mqtt error");
+        mg_http_reply(c, 500, "Access-Control-Allow-Origin: *\r\n", "mqtt error");
     }
 }
 
@@ -137,7 +138,18 @@ static void http_callback(struct mg_connection *c, int ev, void *ev_data)
     if (ev == MG_EV_HTTP_MSG)
     {
         struct mg_http_message *hm = ev_data;
-        printf("uri=%.*s\n", (int)hm->uri.len, hm->uri.buf);
+        // printf("uri=%.*s\n", (int)hm->uri.len, hm->uri.buf);
+
+        // 处理浏览器 CORS 预检请求
+        if (mg_strcmp(hm->method, mg_str("OPTIONS")) == 0)
+        {
+            mg_http_reply(c, 200,
+                          "Access-Control-Allow-Origin: *\r\n"
+                          "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+                          "Access-Control-Allow-Headers: Content-Type\r\n",
+                          "");
+            return;
+        }
 
         if (mg_strcmp(hm->uri, mg_str("/ws")) == 0)
         {
@@ -153,7 +165,6 @@ static void http_callback(struct mg_connection *c, int ev, void *ev_data)
         }
 
         // curl -X POST http://192.168.5.194:8080/api/device/1/cmd -d '{"light":4}'
-        // 运行这个就跑飞了
         struct mg_str id;
         char id_buf[20];
         id.buf = id_buf;
@@ -170,7 +181,7 @@ static void http_callback(struct mg_connection *c, int ev, void *ev_data)
             return;
         }
 
-        mg_http_reply(c, 404, "", "not found\n");
+        mg_http_reply(c, 404, "Access-Control-Allow-Origin: *\r\n" ,"not found\n");
         // mg_http_reply(c, 200, "", "hello sss\n");
     }
 

@@ -23,22 +23,29 @@ extern "C"
 #include "string.h"
 #include <time.h>
 #include "my_mqtt.h"
+#include <pthread.h>
 
 #define DEVICE_MAX_NUM 3
+
+#define DEVICE_OFFLINE_TIMEOUT_SEC 30 // 超过这个时间没上报就判定离线
+#define DEVICE_CHECK_INTERVAL_SEC 5   // 扫描线程检查间隔
 
     typedef struct
     {
         uint32_t id;
 
-        char name[32];
-        char type[32];
+        char name[32];         // info上报
+        char type[32];         // info上报
+        char model[32];        // info上报:设备型号
+        char fw_version[16];   // info上报:固件版本号,如 "1.0.3"
+        char mac[18];          // info上报:MAC 地址,如 "AA:BB:CC:DD:EE:FF" + '\0'
+        char capabilities[64]; // info上报:能力列表,存成逗号分隔字符串,如 "switch,brightness"
         uint8_t online;
         char state[512];
-        uint32_t last_update;
+        time_t last_update;
 
     } my_device_t;
 
-    
     void my_device_manager_init(void);
     int my_device_manager_send_cmd(uint32_t id, const char *json);
     uint32_t my_device_manager_get_list(my_device_t *list, uint32_t max_num);
