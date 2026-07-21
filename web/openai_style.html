@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备控制 - 灯</title>
+
+  <!-- 引入现代感字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #09090b;
+      --card-bg: rgba(24, 24, 27, 0.65);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(255, 255, 255, 0.18);
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --btn-bg: #27272a;
+      --btn-hover: #3f3f46;
+      --input-bg: rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(120, 119, 198, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 16px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    /* 顶部配置栏 */
+    .config {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      padding: 8px 12px;
+      border-radius: 12px;
+      align-items: center;
+    }
+
+    .config label {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .config input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .config input:focus {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-refresh {
+      background: var(--btn-bg);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-refresh:hover {
+      background: var(--btn-hover);
+      border-color: var(--card-border-hover);
+    }
+
+    /* 主卡片风格 */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .device-badge {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 8px;
+      border-radius: 20px;
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* 状态列表 */
+    .status-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .status-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-value {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #52525b;
+      display: inline-block;
+    }
+
+    .dot.online {
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+    }
+
+    .dot.on {
+      background: var(--accent-amber);
+      box-shadow: 0 0 10px var(--accent-amber);
+    }
+
+    /* 按钮组 */
+    .btns {
+      display: flex;
+      gap: 12px;
+    }
+
+    button.btn-cmd {
+      flex: 1;
+      padding: 12px 0;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .btn-on {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    .btn-on:hover {
+      background: #e4e4e7;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-off {
+      background: var(--btn-bg);
+      color: var(--text-main);
+      border-color: var(--card-border);
+    }
+
+    .btn-off:hover {
+      background: var(--btn-hover);
+      border-color: var(--card-border-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* ==================== 现代化极客日志终端 (更新版) ==================== */
+    .log-panel {
+      margin-top: 20px;
+      background: rgba(12, 12, 14, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .log-header {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .log-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #a1a1aa;
+      letter-spacing: 0.02em;
+    }
+
+    .log-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-tool {
+      background: transparent;
+      border: none;
+      color: #71717a;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-tool:hover {
+      color: #f4f4f5;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* 过滤栏 */
+    .log-filter-bar {
+      display: flex;
+      gap: 4px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: none;
+      color: #71717a;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .filter-btn.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f4f4f5;
+    }
+
+    /* 日志内容区域 */
+    .log {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      padding: 12px;
+      height: 180px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #3f3f46 transparent;
+    }
+
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+      opacity: 0;
+      animation: fadeIn 0.2s forwards cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .log-time {
+      color: #52525b;
+      font-size: 11px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    /* 标签类型 */
+    .badge {
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-get { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.2); }
+    .badge-post { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.2); }
+    .badge-ws { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.2); }
+    .badge-err { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
+    .badge-info { background: rgba(255, 255, 255, 0.08); color: #a1a1aa; }
+
+    .log-content {
+      color: #e4e4e7;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .log-data {
+      color: #38edf8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- 服务器配置 -->
+    <div class="config">
+      <label for="baseUrl">服务器</label>
+      <input id="baseUrl" value="http://192.168.12.138:8080" placeholder="http://...">
+      <button id="btnRefresh" class="btn-refresh">刷新</button>
+    </div>
+
+    <!-- 设备卡片 -->
+    <div class="card">
+      <div class="card-header">
+        <h2>智能灯</h2>
+        <span class="device-badge">ID: 1</span>
+      </div>
+
+      <div class="status-group">
+        <div class="status-row">
+          <span class="status-label">在线状态</span>
+          <div class="status-value">
+            <span id="dotOnline" class="dot"></span>
+            <span id="txtOnline">未知</span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <span class="status-label">开关状态</span>
+          <div class="status-value">
+            <span id="dotOn" class="dot"></span>
+            <span id="txtState">未知</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button id="btnOn" class="btn-cmd btn-on">开启</button>
+        <button id="btnOff" class="btn-cmd btn-off">关闭</button>
+      </div>
+    </div>
+
+    <!-- 终端控制台 -->
+    <div class="log-panel">
+      <div class="log-header">
+        <span class="log-title">Console Log</span>
+        <div class="log-actions">
+          <button class="btn-tool" onclick="copyLog(this)">复制</button>
+          <button class="btn-tool" onclick="clearLog()">清空</button>
+        </div>
+      </div>
+
+      <!-- 日志筛选工具栏 -->
+      <div class="log-filter-bar">
+        <button class="filter-btn active" onclick="setFilter('ALL', this)">全部</button>
+        <button class="filter-btn" onclick="setFilter('GET', this)">GET</button>
+        <button class="filter-btn" onclick="setFilter('POST', this)">POST</button>
+        <button class="filter-btn" onclick="setFilter('WS', this)">WS</button>
+        <button class="filter-btn" onclick="setFilter('ERR', this)">错误</button>
+      </div>
+
+      <div class="log" id="log"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const DEVICE_ID = 1;
+    const MAX_LOG_COUNT = 50; // 最大保留日志条数
+    let currentFilter = 'ALL';
+    let rawLogs = []; // 保存原始日志数据
+
+    function baseUrl() {
+      return document.getElementById('baseUrl').value.replace(/\/$/, '');
+    }
+
+    // 清空日志
+    function clearLog() {
+      rawLogs = [];
+      renderLogs();
+    }
+
+    // 一键复制日志文本（支持跟随当前筛选状态）
+function copyLog(btn) {
+  // 1. 获取当前筛选条件下的日志
+  const filtered = rawLogs.filter(item => {
+    if (currentFilter === 'ALL') return true;
+    return item.badgeText === currentFilter;
+  });
+
+  if (filtered.length === 0) return;
+
+  // 2. 拼接当前可见的文本
+  const textToCopy = filtered
+    .map(item => `[${item.time}] [${item.badgeText}] ${item.plainMsg}`)
+    .join('\n');
+  
+  // 3. 复制到剪贴板
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    const originalText = btn.textContent;
+    btn.textContent = '已复制!';
+    btn.style.color = '#10b981'; // 绿字提示
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.color = '';
+    }, 1500);
+  });
+}
+
+    // 切换筛选状态
+    function setFilter(type, btn) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderLogs();
+    }
+
+    // 重新渲染日志
+    function renderLogs() {
+      const el = document.getElementById('log');
+      el.innerHTML = '';
+
+      const filtered = rawLogs.filter(item => {
+        if (currentFilter === 'ALL') return true;
+        return item.badgeText === currentFilter;
+      });
+
+      filtered.forEach(item => {
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `
+          <span class="log-time">${item.time}</span>
+          <span class="badge ${item.badgeType}">${item.badgeText}</span>
+          <span class="log-content">${item.htmlMsg}</span>
+        `;
+        el.appendChild(line);
+      });
+
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // 智能添加日志
+function log(msg) {
+  const time = new Date().toLocaleTimeString();
+
+  let badgeType = 'badge-info';
+  let badgeText = 'INFO';
+  let cleanMsg = msg;
+
+  if (msg.startsWith('GET')) {
+    badgeType = 'badge-get';
+    badgeText = 'GET';
+    cleanMsg = msg.replace(/^GET\s*/, '');
+  } else if (msg.startsWith('POST')) {
+    badgeType = 'badge-post';
+    badgeText = 'POST';
+    cleanMsg = msg.replace(/^POST\s*/, '');
+  } else if (msg.startsWith('WS')) {
+    badgeType = 'badge-ws';
+    badgeText = 'WS';
+    cleanMsg = msg.replace(/^WS\s*/, '');
+  } else if (msg.includes('失败') || msg.includes('异常') || msg.includes('出错')) {
+    badgeType = 'badge-err';
+    badgeText = 'ERR';
+  }
+
+  // 1. 将包含换行的 JSON 格式化/压缩，避免跨行导致正则失效或控制台排版参差不齐
+  // 匹配开头是 { 或 [ 的 JSON 内容（包含换行）
+  const htmlMsg = cleanMsg.replace(/(->|\s)?(\{[\s\S]*\}|\[[\s\S]*\])/, (match, p1 = '', p2 = '') => {
+    try {
+      // 尝试解析并压缩 JSON（去掉多余换行和空格）
+      const compactJson = JSON.stringify(JSON.parse(p2));
+      return `${p1} <span class="log-data">${compactJson}</span>`;
+    } catch (e) {
+      // 不是标准 JSON 就原样加上高亮
+      return `${p1} <span class="log-data">${p2}</span>`;
+    }
+  });
+
+  // 压入日志数组
+  rawLogs.push({
+    time,
+    badgeType,
+    badgeText,
+    plainMsg: cleanMsg,
+    htmlMsg
+  });
+
+  // 限制最大数据条数
+  if (rawLogs.length > MAX_LOG_COUNT) {
+    rawLogs.shift();
+  }
+
+  renderLogs();
+}
+
+    async function refreshStatus() {
+      try {
+        const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}`);
+        if (!res.ok) {
+          log(`获取状态失败: HTTP ${res.status}`);
+          return;
+        }
+        const data = await res.json();
+        log(`GET /api/device/${DEVICE_ID} -> ${JSON.stringify(data)}`);
+
+        const online = data.online === 1;
+        document.getElementById('txtOnline').textContent = online ? '在线' : '离线';
+        document.getElementById('dotOnline').className = 'dot' + (online ? ' online' : '');
+
+        let lightOn = null;
+        try {
+          const stateObj = JSON.parse(data.state);
+          if (typeof stateObj.light !== 'undefined') {
+            lightOn = stateObj.light === 1;
+          }
+        } catch (e) {}
+
+        if (lightOn === null) {
+          document.getElementById('txtState').textContent = '未知';
+          document.getElementById('dotOn').className = 'dot';
+        } else {
+          document.getElementById('txtState').textContent = lightOn ? '已开启' : '已关闭';
+          document.getElementById('dotOn').className = 'dot' + (lightOn ? ' on' : '');
+        }
+      } catch (e) {
+        log(`请求异常: ${e.message}`);
+      }
+    }
+
+    async function sendCmd(on) {
+      const body = JSON.stringify({ light: on ? 1 : 0 });
+      try {
+        const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}/cmd`, {
+          method: 'POST',
+          body: body
+        });
+        const text = await res.text();
+        log(`POST /api/device/${DEVICE_ID}/cmd ${body} -> ${res.status} ${text}`);
+        setTimeout(refreshStatus, 500);
+      } catch (e) {
+        log(`发送指令异常: ${e.message}`);
+      }
+    }
+
+    document.getElementById('btnOn').onclick = () => sendCmd(true);
+    document.getElementById('btnOff').onclick = () => sendCmd(false);
+    document.getElementById('btnRefresh').onclick = refreshStatus;
+
+    function connectWs() {
+      const wsUrl = baseUrl().replace(/^http/, 'ws') + '/ws';
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => log(`WS 已连接: ${wsUrl}`);
+      ws.onmessage = (event) => {
+        log(`WS 收到推送: ${event.data}`);
+        refreshStatus();
+      };
+      ws.onclose = () => log('WS 已断开');
+      ws.onerror = () => log('WS 连接出错');
+    }
+
+    window.onload = () => {
+      refreshStatus();
+      connectWs();
+    };
+  </script>
+</body>
+
+</html>
