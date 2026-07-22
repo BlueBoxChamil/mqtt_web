@@ -42,7 +42,7 @@
     }
 
     body, .card, .config, .log-panel, .status-row, .dot, button, input,
-    .filter-btn, .device-badge, .toggle-track, .toggle-thumb, .settings-toggle,
+    .filter-btn, .device-badge, .settings-toggle,
     .card.offline {
       transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
                   border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -297,7 +297,7 @@
       box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
     }
 
-    /* 方案 C: OpenAI 黑白极简开关样式 */
+    /* 开关行 */
     .toggle-row {
       display: flex;
       justify-content: space-between;
@@ -323,77 +323,102 @@
       font-weight: 500;
     }
 
-    /* --- 优化后的 OpenAI 柔和极简黑白开关 --- */
+    /* =========================================================
+       OpenAI 精密微交互开关 (Precision Micro-Interactions)
+       ========================================================= */
 
-.toggle-track {
-  position: relative;
-  width: 46px;
-  height: 26px;
-  /* 关态：极其低调的暗灰透明 */
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    /* 1. 轨道 (Track)：暗色下沉凹槽感 */
+    .toggle-track {
+      position: relative;
+      width: 50px;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      transition: background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-.toggle-track:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
+    .toggle-track:hover {
+      background: rgba(0, 0, 0, 0.6);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
 
-/* 开启状态：改为哑光锌白/铝灰色，彻底解决刺眼问题 */
-.toggle-track.checked {
-  background: #e4e4e7; /* Zinc-200 哑光白，高级且护眼 */
-  border-color: #e4e4e7;
-}
+    .toggle-track:active {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
 
-.toggle-track.checked:hover {
-  background: #d4d4d8; /* Hover 时微暗 */
-  border-color: #d4d4d8;
-}
+    /* 开启状态轨道：高亮 + 软微光 */
+    .toggle-track.checked {
+      background: #ffffff;
+      border-color: #ffffff;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+    }
 
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff; /* 关态：小圆点保持亮白 */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    .toggle-track.checked:hover {
+      background: #f4f4f5;
+      border-color: #f4f4f5;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+    }
 
-/* 开启状态：滑块反转为深石墨黑 */
-.toggle-track.checked .toggle-thumb {
-  transform: translateX(20px);
-  background: #18181b; /* 深灰黑，比纯黑更有质感 */
-}
-
-/* 离线状态：降低透明度，完美体现不可用感 */
-.card.offline .toggle-track {
-  opacity: 0.25;
-  pointer-events: none;
-}
-
-    .spinner {
-      width: 11px;
-      height: 11px;
+    /* 2. 滑块 (Thumb)：高阻尼精密形变 */
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      border: 2px solid rgba(0, 0, 0, 0.15);
-      border-top-color: rgba(0, 0, 0, 0.65);
-      animation: spin 0.7s linear infinite;
-      display: none;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.24);
+      transform-origin: center center;
+      /* 使用高阻尼无晃动 Bezier 曲线 */
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                  width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  background-color 0.2s ease,
+                  box-shadow 0.2s ease;
     }
 
-    .toggle-track.pending .spinner {
-      display: block;
+    /* 开启状态滑块：平移 22px */
+    .toggle-track.checked .toggle-thumb {
+      transform: translateX(22px);
+      background: #09090b;
+      box-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    /* 3. 按压物理反馈 (Squish & Stretch) */
+    /* 关态按压：固定左侧(0px)，向右伸展(24px)，纵向压缩(scaleY 0.9) */
+    .toggle-track:active .toggle-thumb {
+      width: 24px;
+      transform: scaleY(0.9);
+    }
+
+    /* 开态按压：固定右侧(translateX 18px)，向左伸展(24px)，纵向压缩(scaleY 0.9) */
+    .toggle-track.checked:active .toggle-thumb {
+      width: 24px;
+      transform: translateX(18px) scaleY(0.9);
+    }
+
+    /* 离线状态 */
+    .card.offline .toggle-track {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* 处理中状态：呼吸脉动 */
+    .toggle-track.pending {
+      cursor: default;
+      pointer-events: none;
+      animation: togglePulse 1s ease-in-out infinite;
+    }
+
+    @keyframes togglePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
     /* 日志终端 */
@@ -434,6 +459,7 @@
       height: 14px;
       color: var(--text-dim);
       transform: rotate(-90deg);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .log-panel.open .log-chevron {
@@ -592,7 +618,7 @@
       <div class="config-wrap-inner">
         <div class="config">
           <label for="baseUrl">服务器</label>
-          <input id="baseUrl" value="http://192.168.164.128:8080" placeholder="http://...">
+          <input id="baseUrl" value="http://192.168.12.138:8080" placeholder="http://...">
           <button id="btnRefresh" class="btn-refresh">刷新</button>
         </div>
       </div>
@@ -624,9 +650,7 @@
           <span class="toggle-sublabel" id="toggleSublabel">未知</span>
         </div>
         <div class="toggle-track" id="lightToggle" role="switch" aria-checked="false" tabindex="0">
-          <div class="toggle-thumb">
-            <span class="spinner"></span>
-          </div>
+          <div class="toggle-thumb"></div>
         </div>
       </div>
     </div>
@@ -863,12 +887,12 @@
         });
         const text = await res.text();
         log(`POST /api/device/${DEVICE_ID}/cmd ${body} -> ${res.status} ${text}`);
-        await refreshStatus();
       } catch (e) {
         log(`发送指令异常: ${e.message}`);
       } finally {
         setPending(false);
       }
+      await refreshStatus();
     }
 
     const toggleEl = document.getElementById('lightToggle');

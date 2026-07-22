@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Color Studio</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #0d0d0d;
+    color: #eee;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* 动态背景光 */
+
+.background-glow {
+
+    position: absolute;
+    width: 700px;
+    height: 700px;
+
+    background:
+    radial-gradient(
+        circle,
+        rgba(120,80,255,0.15),
+        transparent 60%
+    );
+
+    filter: blur(80px);
+
+    animation:
+    breathe 6s infinite alternate;
+
+}
+
+
+@keyframes breathe {
+
+    from {
+        transform: scale(0.9);
+        opacity:0.5;
+    }
+
+    to {
+        transform: scale(1.1);
+        opacity:1;
+    }
+
+}
+
+
+
+.container {
+
+    position: relative;
+
+    width:420px;
+
+    padding:40px;
+
+    background:
+    rgba(255,255,255,0.04);
+
+    border:
+
+    1px solid
+    rgba(255,255,255,0.12);
+
+
+    border-radius:24px;
+
+
+    backdrop-filter:blur(20px);
+
+
+}
+
+
+/* 颜色球 */
+
+.color-ball {
+
+    width:120px;
+    height:120px;
+
+    margin:0 auto 35px;
+
+    border-radius:50%;
+
+
+    background:
+    rgb(120,80,255);
+
+
+    box-shadow:
+    0 0 80px
+    rgba(120,80,255,0.6);
+
+
+    transition:
+    background .3s,
+    box-shadow .3s;
+
+}
+
+
+
+h1 {
+
+    text-align:center;
+
+    font-size:24px;
+
+    margin-bottom:35px;
+
+    font-weight:500;
+
+}
+
+
+
+.control {
+
+    margin-bottom:25px;
+
+}
+
+
+
+.label {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    color:#aaa;
+
+    font-size:14px;
+
+    margin-bottom:8px;
+
+}
+
+
+
+/*
+滑块
+*/
+
+input[type=range] {
+
+    width:100%;
+
+    height:6px;
+
+    appearance:none;
+
+    border-radius:10px;
+
+    background:#333;
+
+}
+
+
+input[type=range]::-webkit-slider-thumb {
+
+    appearance:none;
+
+    width:18px;
+
+    height:18px;
+
+    border-radius:50%;
+
+    background:white;
+
+    cursor:pointer;
+
+}
+
+
+
+/* 输出 */
+
+.output {
+
+
+    margin-top:30px;
+
+    padding:20px;
+
+    background:
+    rgba(0,0,0,.3);
+
+
+    border-radius:16px;
+
+
+    font-family:
+    "JetBrains Mono",
+    monospace;
+
+
+    font-size:14px;
+
+    line-height:2;
+
+
+}
+
+
+.value {
+
+    color:#aaa;
+
+}
+
+
+.accent {
+
+    color:white;
+
+}
+
+
+
+button {
+
+
+    width:100%;
+
+    margin-top:25px;
+
+    padding:14px;
+
+
+    border:none;
+
+    border-radius:12px;
+
+
+    color:white;
+
+    background:
+    rgb(120,80,255);
+
+
+    cursor:pointer;
+
+
+    transition:.3s;
+
+}
+
+
+button:hover {
+
+
+    filter:
+    brightness(1.2);
+
+
+}
+
+
+
+</style>
+
+</head>
+
+
+
+<body>
+
+
+<div class="background-glow"
+id="glow">
+</div>
+
+
+<div class="container">
+
+
+<h1>
+Color Studio
+</h1>
+
+
+
+<div class="color-ball"
+id="ball">
+</div>
+
+
+
+<div class="control">
+
+<div class="label">
+
+<span>Hue</span>
+
+<span id="hValue">
+240°
+</span>
+
+</div>
+
+
+<input
+id="h"
+type="range"
+min="0"
+max="360"
+value="240">
+
+</div>
+
+
+
+
+<div class="control">
+
+<div class="label">
+
+<span>Saturation</span>
+
+<span id="sValue">
+80%
+</span>
+
+</div>
+
+
+<input
+id="s"
+type="range"
+min="0"
+max="100"
+value="80">
+
+</div>
+
+
+
+
+<div class="control">
+
+<div class="label">
+
+<span>Lightness</span>
+
+<span id="lValue">
+60%
+</span>
+
+</div>
+
+
+<input
+id="l"
+type="range"
+min="0"
+max="100"
+value="60">
+
+</div>
+
+
+
+
+<div class="output">
+
+
+<div>
+RGB:
+<span class="accent"
+id="rgb">
+</span>
+</div>
+
+
+<div>
+HEX:
+<span class="accent"
+id="hex">
+</span>
+</div>
+
+
+<div>
+CSS:
+<span class="accent">
+--accent-color
+</span>
+</div>
+
+
+</div>
+
+
+
+<button>
+Apply Color
+</button>
+
+
+
+</div>
+
+
+
+
+
+<script>
+
+
+const h =
+document.getElementById("h");
+
+const s =
+document.getElementById("s");
+
+const l =
+document.getElementById("l");
+
+
+const ball =
+document.getElementById("ball");
+
+const glow =
+document.getElementById("glow");
+
+
+function hslToRgb(h,s,l)
+{
+
+s/=100;
+l/=100;
+
+
+let c =
+(1-Math.abs(2*l-1))*s;
+
+
+let x =
+c*(1-Math.abs((h/60)%2-1));
+
+
+let m =
+l-c/2;
+
+
+let r,g,b;
+
+
+if(h<60)
+[r,g,b]=[c,x,0];
+
+else if(h<120)
+[r,g,b]=[x,c,0];
+
+else if(h<180)
+[r,g,b]=[0,c,x];
+
+else if(h<240)
+[r,g,b]=[0,x,c];
+
+else if(h<300)
+[r,g,b]=[x,0,c];
+
+else
+[r,g,b]=[c,0,x];
+
+
+return [
+
+Math.round((r+m)*255),
+
+Math.round((g+m)*255),
+
+Math.round((b+m)*255)
+
+];
+
+}
+
+
+
+function update()
+{
+
+
+let H =
+Number(h.value);
+
+
+let S =
+Number(s.value);
+
+
+let L =
+Number(l.value);
+
+
+
+let rgb =
+hslToRgb(H,S,L);
+
+
+
+let color =
+`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+
+
+
+ball.style.background =
+color;
+
+
+
+ball.style.boxShadow =
+`
+0 0 100px
+rgba(
+${rgb[0]},
+${rgb[1]},
+${rgb[2]},
+0.7
+)
+`;
+
+
+
+glow.style.background =
+`
+radial-gradient(
+circle,
+rgba(
+${rgb[0]},
+${rgb[1]},
+${rgb[2]},
+0.18
+),
+transparent 60%
+)
+`;
+
+
+
+document.querySelector("button")
+.style.background=color;
+
+
+
+document.getElementById("rgb")
+.innerText=color;
+
+
+
+let hex =
+"#"+
+rgb.map(
+x=>x.toString(16).padStart(2,"0")
+)
+.join("")
+.toUpperCase();
+
+
+
+document.getElementById("hex")
+.innerText=hex;
+
+
+
+document.getElementById("hValue")
+.innerText=H+"°";
+
+
+document.getElementById("sValue")
+.innerText=S+"%";
+
+
+document.getElementById("lValue")
+.innerText=L+"%";
+
+}
+
+
+
+[h,s,l].forEach(
+item=>
+item.addEventListener(
+"input",
+update
+)
+);
+
+
+
+update();
+
+
+</script>
+
+
+</body>
+</html>
