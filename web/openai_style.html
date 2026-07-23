@@ -1,18 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
     <title>设备控制 - 智能灯</title>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
-
     <style>
         :root {
             color-scheme: dark;
@@ -57,13 +54,16 @@
         .device-badge,
         .settings-toggle,
         .card.offline,
-        .mode-select {
-            transition: background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        .mode-select,
+        .color-swatch,
+        .bulb-glow {
+            transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         body {
@@ -96,7 +96,6 @@
             z-index: 1;
         }
 
-        /* ===== 设置栏 ===== */
         .settings-bar {
             display: flex;
             justify-content: flex-end;
@@ -130,7 +129,6 @@
             height: 16px;
         }
 
-        /* ===== 配置面板 ===== */
         .config-wrap {
             display: grid;
             grid-template-rows: 0fr;
@@ -206,7 +204,6 @@
             cursor: default;
         }
 
-        /* ===== 主卡片 ===== */
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(18px);
@@ -218,7 +215,11 @@
         }
 
         .card.offline {
-            border-color: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.04);
+            opacity: 0.45;
+            filter: grayscale(60%) brightness(0.8);
+            transform: scale(0.992);
+            pointer-events: none;
         }
 
         .card-header {
@@ -261,7 +262,6 @@
             margin-top: 2px;
         }
 
-        /* ===== 状态行 ===== */
         .status-group {
             display: flex;
             flex-direction: column;
@@ -304,10 +304,22 @@
 
         .dot.online {
             background: #ffffff;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+            animation: onlinePulse 2.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
         }
 
-        /* ===== ★ OpenAI 风格自定义下拉（工作模式） ===== */
+        @keyframes onlinePulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+
         .mode-select-shell {
             position: relative;
         }
@@ -428,7 +440,6 @@
             transform: scale(1);
         }
 
-        /* ===== 开关行 ===== */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -520,18 +531,10 @@
         }
 
         @keyframes togglePulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.4;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
-        /* ===== 灯泡区域 ===== */
         .bulb-wrapper {
             position: relative;
             display: flex;
@@ -552,14 +555,14 @@
             pointer-events: none;
             transform: scale(0.9);
             animation: rgbGlowBreathe 6s infinite alternate;
-            transition: opacity 0.4s ease, transform 0.4s ease;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             opacity: 1;
         }
 
         .bulb-glow.light-off {
             opacity: 0;
             animation: none;
-            transform: scale(0.9);
+            transform: scale(0.85);
         }
 
         @keyframes rgbGlowBreathe {
@@ -579,10 +582,10 @@
             border-radius: 50%;
             background: #ff9d00;
             box-shadow: 0 0 80px rgba(255, 157, 0, 0.5);
-            transition: background-color 0.35s ease,
-                box-shadow 0.35s ease,
-                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.4s ease;
+            transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             transform: scale(1);
             opacity: 1;
             position: relative;
@@ -590,8 +593,9 @@
         }
 
         .color-swatch.light-off {
-            transform: scale(0);
+            transform: scale(0.1);
             opacity: 0;
+            filter: brightness(0.2);
             pointer-events: none;
         }
 
@@ -622,7 +626,6 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* ===== 控制面板 ===== */
         .controls-wrap {
             display: grid;
             grid-template-rows: 0fr;
@@ -718,7 +721,6 @@
             gap: 12px;
         }
 
-        /* ===== 日志面板 ===== */
         .log-panel {
             margin-top: 20px;
             background: rgba(14, 14, 18, 0.95);
@@ -871,9 +873,7 @@
         }
 
         @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
+            to { opacity: 1; }
         }
 
         .log-time {
@@ -936,87 +936,49 @@
             font-weight: 500;
         }
 
-        /* ===== 响应式 ===== */
         @media (max-width: 420px) {
-            .card {
-                padding: 20px 16px 18px;
-            }
-            .mode-trigger {
-                min-width: 100px;
-                font-size: 13px;
-                padding: 5px 8px 5px 12px;
-            }
-            .status-row {
-                padding: 8px 12px;
-                flex-wrap: wrap;
-                gap: 4px;
-            }
-            .color-swatch {
-                width: 90px;
-                height: 90px;
-            }
-            .device-badge {
-                font-size: 11px;
-                padding: 3px 10px;
-            }
-            .card h2 {
-                font-size: 20px;
-            }
-            .config {
-                flex-wrap: wrap;
-            }
-            .config input {
-                min-width: 120px;
-            }
-            .log {
-                font-size: 11.5px;
-                padding: 10px;
-                height: 150px;
-            }
+            .card { padding: 20px 16px 18px; }
+            .mode-trigger { min-width: 100px; font-size: 13px; padding: 5px 8px 5px 12px; }
+            .status-row { padding: 8px 12px; flex-wrap: wrap; gap: 4px; }
+            .color-swatch { width: 90px; height: 90px; }
+            .device-badge { font-size: 11px; padding: 3px 10px; }
+            .card h2 { font-size: 20px; }
+            .config { flex-wrap: wrap; }
+            .config input { min-width: 120px; }
+            .log { font-size: 11.5px; padding: 10px; height: 150px; }
         }
 
         @media (max-width: 360px) {
-            .mode-trigger {
-                min-width: 80px;
-                font-size: 12px;
-                padding: 4px 8px 4px 10px;
-            }
-            .status-value {
-                font-size: 12px;
-            }
+            .mode-trigger { min-width: 80px; font-size: 12px; padding: 4px 8px 4px 10px; }
+            .status-value { font-size: 12px; }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
-
-        <!-- ===== 设置栏 ===== -->
         <div class="settings-bar">
             <button class="settings-toggle" id="btnSettingsToggle" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path
-                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
                     </path>
                 </svg>
                 <span>连接设置</span>
             </button>
         </div>
 
-        <!-- ===== 配置面板 ===== -->
         <div class="config-wrap" id="configWrap">
             <div class="config-wrap-inner">
                 <div class="config">
                     <label for="baseUrl">服务器</label>
-                    <input id="baseUrl" value="http://192.168.164.128:8080" placeholder="http://...">
+                    <input id="baseUrl" value="http://192.168.12.138:8080" placeholder="http://...">
                     <button id="btnRefresh" class="btn-refresh">刷新</button>
                 </div>
             </div>
         </div>
 
-        <!-- ===== 设备主卡片 ===== -->
         <div class="card" id="deviceCard">
             <div class="card-header">
                 <div class="card-title-group">
@@ -1026,7 +988,6 @@
                 <span class="device-badge">ID: 1</span>
             </div>
 
-            <!-- 状态行 -->
             <div class="status-group">
                 <div class="status-row">
                     <span class="status-label">在线状态</span>
@@ -1035,6 +996,7 @@
                         <span id="txtOnline">未知</span>
                     </div>
                 </div>
+
                 <div class="status-row">
                     <span class="status-label">工作模式</span>
                     <div class="status-value">
@@ -1057,7 +1019,6 @@
                 </div>
             </div>
 
-            <!-- 开关 -->
             <div class="toggle-row">
                 <div class="toggle-label-group">
                     <span class="toggle-label">灯光开关</span>
@@ -1068,7 +1029,6 @@
                 </div>
             </div>
 
-            <!-- 灯泡 -->
             <div class="bulb-wrapper">
                 <div class="bulb-glow" id="bulbGlow"></div>
                 <div class="color-swatch" id="rgbColorDot"></div>
@@ -1078,7 +1038,6 @@
                 </div>
             </div>
 
-            <!-- 控制面板 -->
             <div class="controls-wrap" id="controlsWrap">
                 <div class="controls-inner">
                     <div class="control-item" id="rowBrightness" style="display: none;">
@@ -1088,6 +1047,7 @@
                         </div>
                         <input type="range" class="slider" id="sliderBrightness" min="0" max="100" value="100">
                     </div>
+
                     <div class="control-item" id="rowWhite" style="display: none;">
                         <div class="control-header">
                             <span>色温 / 白平衡</span>
@@ -1095,6 +1055,7 @@
                         </div>
                         <input type="range" class="slider slider-white" id="sliderWhite" min="0" max="255" value="125">
                     </div>
+
                     <div class="control-item" id="rowRGB" style="display: none;">
                         <div class="hsl-controls">
                             <div class="control-item" style="gap: 6px;">
@@ -1104,6 +1065,7 @@
                                 </div>
                                 <input type="range" class="slider" id="sliderHue" min="0" max="360" value="30">
                             </div>
+
                             <div class="control-item" style="gap: 6px;">
                                 <div class="control-header">
                                     <span>饱和度 Saturation</span>
@@ -1111,6 +1073,7 @@
                                 </div>
                                 <input type="range" class="slider" id="sliderSaturation" min="0" max="100" value="100">
                             </div>
+
                             <div class="control-item" style="gap: 6px;">
                                 <div class="control-header">
                                     <span>明度 Lightness</span>
@@ -1124,7 +1087,6 @@
             </div>
         </div>
 
-        <!-- ===== 日志面板 ===== -->
         <div class="log-panel" id="logPanel">
             <div class="log-header" id="logHeader">
                 <div class="log-title-group">
@@ -1164,7 +1126,6 @@
         let pendingCmd = false;
         let isDragging = false;
         let lastSuccessfulState = null;
-
         let currentState = {
             light: 1,
             mode: 0,
@@ -1191,19 +1152,20 @@
             2: 'RGB 彩光'
         };
 
-        /* ===== ★ OpenAI 风格自定义下拉：与原生 select 双向同步 ===== */
         const modeCheckSvg = '<svg class="mode-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
         function renderModePanel() {
             const nativeSelect = document.getElementById('modeSelect');
             const panel = document.getElementById('modePanel');
             panel.innerHTML = '';
+
             Array.from(nativeSelect.options).forEach(opt => {
                 const row = document.createElement('div');
                 row.className = 'mode-option' + (opt.value === nativeSelect.value ? ' selected' : '');
                 row.setAttribute('role', 'option');
                 row.dataset.value = opt.value;
                 row.innerHTML = `<span>${opt.textContent}</span>${modeCheckSvg}`;
+
                 row.addEventListener('click', () => {
                     if (nativeSelect.value !== opt.value) {
                         nativeSelect.value = opt.value;
@@ -1308,15 +1270,9 @@
                 const d = max - min;
                 s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
                 switch (max) {
-                    case r:
-                        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-                        break;
-                    case g:
-                        h = ((b - r) / d + 2) / 6;
-                        break;
-                    case b:
-                        h = ((r - g) / d + 4) / 6;
-                        break;
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
                 }
             }
             return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
@@ -1324,6 +1280,7 @@
 
         function computeBulbColor(state) {
             const { mode, brightness, white, h, s, l } = state;
+
             if (mode === 0) {
                 return { h: 0, s: 0, l: 100 };
             } else if (mode === 1) {
@@ -1358,6 +1315,7 @@
         function applyColorVisuals(h, s, l) {
             const hex = hslToHex(h, s, l);
             const [r, g, b] = hexToRgb(hex);
+
             document.getElementById('rgbHexReadout').textContent = hex;
 
             const ball = document.getElementById('rgbColorDot');
@@ -1440,6 +1398,106 @@
             return document.getElementById('baseUrl').value.replace(/\/$/, '');
         }
 
+        // ===== WebSocket 实时推送 =====
+        let ws = null;
+        let wsReconnectTimer = null;
+        let wsReconnectDelay = 2000;
+        let pollTimer = null;
+
+        function startPolling() {
+            if (pollTimer) return; // 已经在轮询了,不重复开
+            pollTimer = setInterval(refreshStatus, 10000);
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        function wsUrl() {
+            return baseUrl().replace(/^http/, 'ws') + '/ws';
+        }
+
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(wsUrl());
+            } catch (e) {
+                log(`WS 连接创建失败: ${e.message}`);
+                scheduleReconnect();
+                return;
+            }
+
+            ws.onopen = () => {
+                log('WS 已连接');
+                wsReconnectDelay = 2000;
+                stopPolling(); // WS 已经能实时推送了,轮询兜底先停掉
+                // WS 推送只带 state/info 里的字段,没有 online/mac 等,连上后先全量拉一次
+                refreshStatus();
+            };
+
+            ws.onmessage = (ev) => {
+                log(`WS <- ${ev.data}`);
+
+                let data;
+                try {
+                    data = JSON.parse(ev.data);
+                } catch (e) {
+                    // 例如刚连接时服务端发的 "hello websocket" 纯文本,不是JSON,直接忽略
+                    return;
+                }
+
+                // 离线超时通知: {"id":1,"online":0} ,只有这两个字段,单独处理,不要往下当 state 合并
+                if (data.online !== undefined && data.light === undefined) {
+                    renderOnlineState(data.online === 1);
+                    return;
+                }
+
+                // 走到这说明是 state/info 推送,能收到说明设备当前是在线的
+                renderOnlineState(true);
+
+                // info 上报(name/type/model/mac/capabilities),没有 light/mode 等状态字段
+                if (data.mac !== undefined || data.capabilities !== undefined || data.fw_version !== undefined) {
+                    if (data.capabilities) {
+                        let caps = Array.isArray(data.capabilities) ? data.capabilities : data.capabilities.split(',').map(s => s.trim());
+                        buildModeOptions(caps);
+                    }
+                    return;
+                }
+
+                // state 上报,和轮询里的合并逻辑保持一致
+                if (!isDragging) {
+                    currentState = { ...currentState, ...data };
+                    updateUIFromState(currentState);
+                } else {
+                    if (data.light !== undefined) currentState.light = data.light;
+                    if (data.mode !== undefined) currentState.mode = data.mode;
+                    updateUIFromState(currentState);
+                }
+            };
+
+            ws.onerror = () => {
+                log('WS 连接错误');
+            };
+
+            ws.onclose = () => {
+                log('WS 断开,准备重连');
+                ws = null;
+                startPolling(); // WS 断了,先靠轮询兜底,别让界面完全没更新
+                scheduleReconnect();
+            };
+        }
+
+        function scheduleReconnect() {
+            if (wsReconnectTimer) return;
+            wsReconnectTimer = setTimeout(() => {
+                wsReconnectTimer = null;
+                connectWebSocket();
+            }, wsReconnectDelay);
+            wsReconnectDelay = Math.min(wsReconnectDelay * 2, 15000);
+        }
+
         document.getElementById('btnSettingsToggle').onclick = () => {
             document.getElementById('configWrap').classList.toggle('open');
         };
@@ -1453,8 +1511,10 @@
         async function sendCmd(partialState) {
             if (pendingCmd) return;
             setPending(true);
+
             const payload = { ...currentState, ...partialState };
             const body = JSON.stringify(payload);
+
             try {
                 const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}/cmd`, {
                     method: 'POST',
@@ -1462,6 +1522,7 @@
                 });
                 const text = await res.text();
                 log(`POST /api/device/${DEVICE_ID}/cmd ${body} -> ${res.status} ${text}`);
+
                 if (res.ok) {
                     Object.assign(currentState, partialState);
                     lastSuccessfulState = { ...currentState };
@@ -1475,6 +1536,7 @@
             } finally {
                 setPending(false);
             }
+
             await refreshStatus();
         }
 
@@ -1554,6 +1616,7 @@
         async function refreshStatus() {
             const btnRefresh = document.getElementById('btnRefresh');
             btnRefresh.disabled = true;
+
             try {
                 const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}`);
                 if (!res.ok) {
@@ -1567,7 +1630,7 @@
 
                 if (data.capabilities) {
                     let caps = Array.isArray(data.capabilities) ? data.capabilities : data.capabilities.split(',').map(s =>
-                    s.trim());
+                        s.trim());
                     buildModeOptions(caps);
                 } else {
                     buildModeOptions(null);
@@ -1609,7 +1672,9 @@
         function renderLogs() {
             const el = document.getElementById('log');
             el.innerHTML = '';
+
             const filtered = rawLogs.filter(item => currentFilter === 'ALL' || item.badgeText === currentFilter);
+
             filtered.forEach(item => {
                 const line = document.createElement('div');
                 line.className = 'log-line';
@@ -1620,80 +1685,59 @@
                 `;
                 el.appendChild(line);
             });
+
             el.scrollTop = el.scrollHeight;
             document.getElementById('logCount').textContent = rawLogs.length;
         }
 
-        function log(msg) {
-            const time = new Date().toLocaleTimeString();
+        function log(msg, type = 'INFO') {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
             let badgeType = 'badge-info';
             let badgeText = 'INFO';
-            let cleanMsg = msg;
-            if (msg.startsWith('GET')) {
-                badgeType = 'badge-get';
-                badgeText = 'GET';
-                cleanMsg = msg.replace(/^GET\s*/, '');
-            } else if (msg.startsWith('POST')) {
-                badgeType = 'badge-post';
-                badgeText = 'POST';
-                cleanMsg = msg.replace(/^POST\s*/, '');
-            } else if (msg.startsWith('WS')) {
-                badgeType = 'badge-ws';
-                badgeText = 'WS';
-                cleanMsg = msg.replace(/^WS\s*/, '');
-            } else if (msg.includes('失败') || msg.includes('异常') || msg.includes('出错')) {
-                badgeType = 'badge-err';
-                badgeText = 'ERR';
-            }
-            const htmlMsg = cleanMsg.replace(/(->|\s)?(\{[\s\S]*\}|\[[\s\S]*\])/, (match, p1 = '', p2 = '') => {
-                try {
-                    const compactJson = JSON.stringify(JSON.parse(p2));
-                    return `${p1} <span class="log-data">${compactJson}</span>`;
-                } catch (e) {
-                    return `${p1} <span class="log-data">${p2}</span>`;
-                }
-            });
-            rawLogs.push({ time, badgeType, badgeText, plainMsg: cleanMsg, htmlMsg });
+            let htmlMsg = msg;
+
+            if (msg.includes('GET ')) { badgeType = 'badge-get'; badgeText = 'GET'; }
+            else if (msg.includes('POST ')) { badgeType = 'badge-post'; badgeText = 'POST'; }
+            else if (msg.includes('WS ') || msg.includes('WebSocket')) { badgeType = 'badge-ws'; badgeText = 'WS'; }
+            else if (msg.includes('异常') || msg.includes('失败') || msg.includes('ERR')) { badgeType = 'badge-err'; badgeText = 'ERR'; }
+
+            htmlMsg = htmlMsg.replace(/(\{[\s\S]*\})/g, '<span class="log-data">$1</span>');
+
+            rawLogs.push({ time, badgeType, badgeText, htmlMsg });
             if (rawLogs.length > MAX_LOG_COUNT) rawLogs.shift();
             renderLogs();
         }
 
-        document.getElementById('btnCopyLog').onclick = () => {
-            const textToCopy = rawLogs.map(item => `[${item.time}] [${item.badgeText}] ${item.plainMsg}`).join('\n');
-            navigator.clipboard.writeText(textToCopy);
-        };
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderLogs();
+            };
+        });
+
         document.getElementById('btnClearLog').onclick = () => {
             rawLogs = [];
             renderLogs();
         };
 
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.onclick = () => {
-                currentFilter = btn.dataset.filter;
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderLogs();
-            };
-        });
+        document.getElementById('btnCopyLog').onclick = async () => {
+            const text = rawLogs.map(i => `[${i.time}] [${i.badgeText}] ${i.htmlMsg.replace(/<[^>]+>/g, '')}`).join('\n');
+            try {
+                await navigator.clipboard.writeText(text);
+                log('日志已复制到剪贴板');
+            } catch (e) {
+                log(`复制失败: ${e.message}`, 'ERR');
+            }
+        };
 
         document.getElementById('btnRefresh').onclick = refreshStatus;
 
-        function connectWs() {
-            const wsUrl = baseUrl().replace(/^http/, 'ws') + '/ws';
-            const ws = new WebSocket(wsUrl);
-            ws.onopen = () => log(`WS 已连接: ${wsUrl}`);
-            ws.onmessage = () => refreshStatus();
-            ws.onclose = () => log('WS 已断开');
-            ws.onerror = () => log('WS 连接出错');
-        }
-
-        window.onload = () => {
-            buildModeOptions(null);
-            updateUIFromState(currentState);
-            refreshStatus();
-            connectWs();
-        };
+        refreshStatus();
+        startPolling(); // 先靠轮询兜底,WS 连上后 onopen 会自动停掉它
+        connectWebSocket();
     </script>
 </body>
-
 </html>
