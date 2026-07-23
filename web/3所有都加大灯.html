@@ -3,27 +3,26 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark">
-  <title>设备控制 - 智能灯 (OpenAI 极客仪器版)</title>
+  <title>设备控制 - 智能灯</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
 
   <style>
     :root {
       color-scheme: dark;
-
       --bg-color: #09090b;
       --card-bg: rgba(30, 30, 36, 0.95);
       --card-border: rgba(255, 255, 255, 0.18);
       --card-border-hover: rgba(255, 255, 255, 0.35);
-      
-      --text-main: #ffffff;      
-      --text-muted: #f4f4f5;     
-      --text-dim: #cbd5e1;       
-      
+      --text-main: #ffffff;
+      --text-muted: #f4f4f5;
+      --text-dim: #cbd5e1;
       --btn-bg: #27272a;
       --btn-hover: #3f3f46;
       --input-bg: rgba(0, 0, 0, 0.6);
@@ -41,22 +40,30 @@
       color: var(--text-main);
     }
 
-    body, .card, .config, .log-panel, .status-row, .dot, button, input,
-    .filter-btn, .device-badge, .settings-toggle,
+    body,
+    .card,
+    .config,
+    .log-panel,
+    .status-row,
+    .dot,
+    button,
+    input,
+    .filter-btn,
+    .device-badge,
+    .settings-toggle,
     .card.offline {
       transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg-color);
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+      background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
       color: var(--text-main);
       margin: 0;
       padding: 40px 16px;
@@ -83,7 +90,6 @@
       z-index: 1;
     }
 
-    /* 顶部连接设置 */
     .settings-bar {
       display: flex;
       justify-content: flex-end;
@@ -115,7 +121,6 @@
       height: 16px;
     }
 
-    /* 高级设置面板 */
     .config-wrap {
       display: grid;
       grid-template-rows: 0fr;
@@ -178,7 +183,6 @@
       border-color: var(--card-border-hover);
     }
 
-    /* 主卡片 */
     .card {
       background: var(--card-bg);
       backdrop-filter: blur(16px);
@@ -186,6 +190,7 @@
       border-radius: 18px;
       padding: 24px 28px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      position: relative;
     }
 
     .card.offline {
@@ -229,7 +234,6 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
-    /* 状态列表 */
     .status-group {
       display: flex;
       flex-direction: column;
@@ -283,7 +287,6 @@
       border-radius: 6px;
     }
 
-    /* 开关行 */
     .toggle-row {
       display: flex;
       justify-content: space-between;
@@ -307,7 +310,6 @@
       color: var(--text-dim);
     }
 
-    /* 精密微交互开关 */
     .toggle-track {
       position: relative;
       width: 50px;
@@ -319,8 +321,8 @@
       flex-shrink: 0;
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
       transition: background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                  border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                  box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .toggle-track:hover {
@@ -345,8 +347,8 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
       transform-origin: center center;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                  width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  background-color 0.2s ease;
+        width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        background-color 0.2s ease;
     }
 
     .toggle-track.checked .toggle-thumb {
@@ -371,16 +373,108 @@
     }
 
     @keyframes togglePulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
     }
 
-    /* 动态展开调节面板 */
+    /* 灯泡与光晕独立区域 */
+    .bulb-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 12px 0 8px;
+      padding: 24px 0 12px;
+    }
+
+    .bulb-glow {
+      position: absolute;
+      top: -30px;
+      left: -30px;
+      right: -30px;
+      bottom: -30px;
+      background: radial-gradient(circle, rgba(255, 157, 0, 0.2), transparent 60%);
+      filter: blur(50px);
+      pointer-events: none;
+      transform: scale(0.9);
+      animation: rgbGlowBreathe 6s infinite alternate;
+      transition: opacity 0.35s ease;
+      opacity: 1;
+    }
+
+    .bulb-glow.light-off {
+      opacity: 0;
+      animation: none;
+      transform: scale(0.9);
+    }
+
+    @keyframes rgbGlowBreathe {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+    }
+
+    .color-swatch {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #ff9d00;
+      box-shadow: 0 0 80px rgba(255, 157, 0, 0.6);
+      transition: background-color 0.3s, box-shadow 0.3s,
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.35s ease;
+      transform: scale(1);
+      opacity: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .color-swatch.light-off {
+      transform: scale(0);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .color-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      margin-top: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .color-info-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .color-info-hex {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
     .controls-wrap {
       display: grid;
       grid-template-rows: 0fr;
       transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-                  opacity 0.25s ease;
+        opacity 0.25s ease;
       margin-top: 0;
     }
 
@@ -399,6 +493,7 @@
       display: flex;
       flex-direction: column;
       gap: 18px;
+      padding: 8px 12px 12px 12px;
     }
 
     .control-item {
@@ -422,7 +517,6 @@
       color: var(--text-dim);
     }
 
-    /* 通用 Slider 样式 */
     .slider {
       -webkit-appearance: none;
       appearance: none;
@@ -456,212 +550,13 @@
       transform: scale(1.15);
     }
 
-    /* 白平衡双色渐变 Track */
     .slider-white {
-      background: linear-gradient(90deg, #ff9e44 0%, #ffffff 50%, #a3c9ff 100%);
+      /* background: linear-gradient(90deg, #ff9e44 0%, #ffffff 50%, #a3c9ff 100%); */
+      background: rgba(255, 255, 255, 0.08);
+      /* 与普通滑块一致 */
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
     }
 
-    /* =========================================================
-       [方案 C - 专享] OpenAI / Teenage Engineering 工业控制组件样式
-       ========================================================= */
-    .instrument-box {
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      position: relative;
-    }
-
-    .instrument-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: rgba(255, 255, 255, 0.45);
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
-    }
-
-    .instrument-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 2px 8px;
-      border-radius: 4px;
-      color: #ffffff;
-    }
-
-    .micro-led {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #ffffff;
-      box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
-      transition: background-color 0.2s, box-shadow 0.2s;
-    }
-
-    /* 2px 极细光谱刻度滑条 */
-    .slider-hue-instrument {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 2px;
-      border-radius: 1px;
-      outline: none;
-      cursor: pointer;
-      background: linear-gradient(
-        to right,
-        #ff0000 0%,
-        #ffff00 17%,
-        #00ff00 33%,
-        #00ffff 50%,
-        #0000ff 67%,
-        #ff00ff 83%,
-        #ff0000 100%
-      );
-      margin: 8px 0 2px;
-    }
-
-    .slider-hue-instrument::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 10px;
-      height: 18px;
-      border-radius: 2px;
-      background: #ffffff;
-      border: 1px solid #000000;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(0,0,0,0.8);
-      cursor: pointer;
-      transition: transform 0.1s ease;
-    }
-
-    .slider-hue-instrument::-webkit-slider-thumb:active {
-      transform: scaleY(1.15);
-    }
-
-    /* 示波器风格刻度线 */
-    .spectrum-ticks {
-      display: flex;
-      justify-content: space-between;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: rgba(255, 255, 255, 0.3);
-      padding: 0 2px;
-      user-select: none;
-    }
-
-    /* S & L 极简双列刻度框 */
-    .sl-matrix {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 4px;
-    }
-
-    .sl-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 8px 10px;
-      border-radius: 6px;
-    }
-
-    .sl-label {
-      display: flex;
-      justify-content: space-between;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .sl-val {
-      color: #ffffff;
-      font-weight: 600;
-    }
-
-    .slider-micro {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 2px;
-      border-radius: 1px;
-      outline: none;
-      cursor: pointer;
-      background: rgba(255, 255, 255, 0.15);
-      margin-top: 4px;
-    }
-
-    .slider-micro::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 8px;
-      height: 12px;
-      border-radius: 1px;
-      background: #ffffff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.6);
-      cursor: pointer;
-    }
-
-    /* 工程代码标签式预设矩阵 */
-    .preset-matrix-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: 6px;
-    }
-
-    .tag-chip {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-      outline: none;
-    }
-
-    .tag-chip:hover {
-      border-color: rgba(255, 255, 255, 0.35);
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .tag-chip.active {
-      border-color: #ffffff;
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-    }
-
-    .tag-chip .chip-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: transparent;
-    }
-
-    .tag-chip.active .chip-dot {
-      background: #ffffff;
-      box-shadow: 0 0 4px #ffffff;
-    }
-
-    /* 日志终端 */
     .log-panel {
       margin-top: 20px;
       background: rgba(20, 20, 24, 0.95);
@@ -795,30 +690,79 @@
       animation: fadeIn 0.2s forwards ease;
     }
 
-    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
 
-    .log-time { color: #cbd5e1; font-size: 12px; white-space: nowrap; }
-    .badge { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-    .badge-get { background: rgba(59, 130, 246, 0.25); color: #93c5fd; border: 1px solid rgba(147, 197, 253, 0.35); }
-    .badge-post { background: rgba(168, 85, 247, 0.25); color: #d8b4fe; border: 1px solid rgba(216, 180, 254, 0.35); }
-    .badge-ws { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid rgba(110, 231, 183, 0.35); }
-    .badge-err { background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid rgba(252, 165, 165, 0.35); }
-    .badge-info { background: rgba(255, 255, 255, 0.15); color: #f4f4f5; }
+    .log-time {
+      color: #cbd5e1;
+      font-size: 12px;
+      white-space: nowrap;
+    }
 
-    .log-content { color: #ffffff; word-break: break-all; flex: 1; }
-    .log-data { color: #67e8f9; font-weight: 500; }
+    .badge {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-get {
+      background: rgba(59, 130, 246, 0.25);
+      color: #93c5fd;
+      border: 1px solid rgba(147, 197, 253, 0.35);
+    }
+
+    .badge-post {
+      background: rgba(168, 85, 247, 0.25);
+      color: #d8b4fe;
+      border: 1px solid rgba(216, 180, 254, 0.35);
+    }
+
+    .badge-ws {
+      background: rgba(16, 185, 129, 0.25);
+      color: #6ee7b7;
+      border: 1px solid rgba(110, 231, 183, 0.35);
+    }
+
+    .badge-err {
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+      border: 1px solid rgba(252, 165, 165, 0.35);
+    }
+
+    .badge-info {
+      background: rgba(255, 255, 255, 0.15);
+      color: #f4f4f5;
+    }
+
+    .log-content {
+      color: #ffffff;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .log-data {
+      color: #67e8f9;
+      font-weight: 500;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
 
-    <!-- 顶部连接设置 -->
     <div class="settings-bar">
       <button class="settings-toggle" id="btnSettingsToggle" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
         </svg>
         <span>连接设置</span>
       </button>
@@ -828,7 +772,7 @@
       <div class="config-wrap-inner">
         <div class="config">
           <label for="baseUrl">服务器</label>
-          <input id="baseUrl" value="http://192.168.12.138:8080" placeholder="http://...">
+          <input id="baseUrl" value="http://192.168.164.128:8080" placeholder="http://...">
           <button id="btnRefresh" class="btn-refresh">刷新</button>
         </div>
       </div>
@@ -852,7 +796,6 @@
             <span id="txtOnline">未知</span>
           </div>
         </div>
-
         <div class="status-row">
           <span class="status-label">工作模式</span>
           <div class="status-value">
@@ -861,7 +804,6 @@
         </div>
       </div>
 
-      <!-- 1. 主开关 -->
       <div class="toggle-row">
         <div class="toggle-label-group">
           <span class="toggle-label">灯光开关</span>
@@ -872,20 +814,26 @@
         </div>
       </div>
 
-      <!-- 2. 动态调节面板 -->
+      <!-- 独立灯泡区域 -->
+      <div class="bulb-wrapper">
+        <div class="bulb-glow" id="bulbGlow"></div>
+        <div class="color-swatch" id="rgbColorDot"></div>
+        <div class="color-info">
+          <span class="color-info-label">当前颜色</span>
+          <span class="color-info-hex" id="rgbHexReadout">#FFFFFF</span>
+        </div>
+      </div>
+
+      <!-- 控制面板 -->
       <div class="controls-wrap" id="controlsWrap">
         <div class="controls-inner">
-
-          <!-- 物理亮度调节 (Mode 1 & 2 显示) -->
           <div class="control-item" id="rowBrightness" style="display: none;">
             <div class="control-header">
               <span>亮度 (Brightness)</span>
-              <span class="control-val" id="valBrightness">77%</span>
+              <span class="control-val" id="valBrightness">100%</span>
             </div>
-            <input type="range" class="slider" id="sliderBrightness" min="0" max="100" value="77">
+            <input type="range" class="slider" id="sliderBrightness" min="0" max="100" value="100">
           </div>
-
-          <!-- 冷暖白平衡 (Mode 1 显示) -->
           <div class="control-item" id="rowWhite" style="display: none;">
             <div class="control-header">
               <span>色温 / 白平衡</span>
@@ -893,94 +841,31 @@
             </div>
             <input type="range" class="slider slider-white" id="sliderWhite" min="0" max="255" value="125">
           </div>
-
-          <!-- =========================================================
-             [仅修改此模块] HSL 色彩控制区 - OpenAI / Teenage Engineering 极客风格
-             ========================================================= -->
           <div class="control-item" id="rowRGB" style="display: none;">
-            <div class="instrument-box">
-              
-              <!-- 1. 顶部仪器信息栏 -->
-              <div class="instrument-header">
-                <span>SYS // COLOR_MATRIX</span>
-                <div class="instrument-badge">
-                  <div class="micro-led" id="rgbColorDot"></div>
-                  <span id="rgbHexReadout">#FF9D00</span>
-                </div>
-              </div>
-
-              <!-- 2. HUE 色相 2px 极细刻度条 -->
-              <div class="control-item" style="gap: 4px;">
+            <div class="hsl-controls">
+              <div class="control-item" style="gap: 8px;">
                 <div class="control-header">
-                  <span style="font-family:'JetBrains Mono'; font-size:11px; text-transform:uppercase; color:rgba(255,255,255,0.6);">HUE SPECTRUM</span>
+                  <span>色相 Hue</span>
                   <span class="control-val" id="valHue">030°</span>
                 </div>
-                <input type="range" class="slider-hue-instrument" id="sliderHue" min="0" max="360" value="30">
-                <div class="spectrum-ticks">
-                  <span>0°</span>
-                  <span>90°</span>
-                  <span>180°</span>
-                  <span>270°</span>
-                  <span>360°</span>
-                </div>
+                <input type="range" class="slider" id="sliderHue" min="0" max="360" value="30">
               </div>
-
-              <!-- 3. S & L 极简双列刻度框 -->
-              <div class="sl-matrix">
-                <div class="sl-item">
-                  <div class="sl-label">
-                    <span>SAT</span>
-                    <span class="sl-val" id="valSaturation">100%</span>
-                  </div>
-                  <input type="range" class="slider-micro" id="sliderSaturation" min="0" max="100" value="100">
+              <div class="control-item" style="gap: 8px;">
+                <div class="control-header">
+                  <span>饱和度 Saturation</span>
+                  <span class="control-val" id="valSaturation">100%</span>
                 </div>
-
-                <div class="sl-item">
-                  <div class="sl-label">
-                    <span>LUM</span>
-                    <span class="sl-val" id="valLightness">50%</span>
-                  </div>
-                  <input type="range" class="slider-micro" id="sliderLightness" min="0" max="100" value="50">
-                </div>
+                <input type="range" class="slider" id="sliderSaturation" min="0" max="100" value="100">
               </div>
-
-              <!-- 4. 工程预设代码矩阵 -->
-              <div style="margin-top: 4px;">
-                <div class="instrument-header" style="border-bottom:none; padding-bottom:4px;">
-                  <span>PRESET_INDEX</span>
+              <div class="control-item" style="gap: 8px;">
+                <div class="control-header">
+                  <span>明度 Lightness</span>
+                  <span class="control-val" id="valLightness">50%</span>
                 </div>
-                <div class="preset-matrix-grid" id="presetColors">
-                  <button class="tag-chip" type="button" data-h="0" data-s="100" data-l="50">
-                    <span>RED//000°</span>
-                    <span class="chip-dot"></span>
-                  </button>
-                  <button class="tag-chip" type="button" data-h="35" data-s="100" data-l="50">
-                    <span>AMB//035°</span>
-                    <span class="chip-dot"></span>
-                  </button>
-                  <button class="tag-chip" type="button" data-h="120" data-s="100" data-l="50">
-                    <span>GRN//120°</span>
-                    <span class="chip-dot"></span>
-                  </button>
-                  <button class="tag-chip" type="button" data-h="190" data-s="100" data-l="50">
-                    <span>CYN//190°</span>
-                    <span class="chip-dot"></span>
-                  </button>
-                  <button class="tag-chip" type="button" data-h="224" data-s="100" data-l="50">
-                    <span>BLU//224°</span>
-                    <span class="chip-dot"></span>
-                  </button>
-                  <button class="tag-chip" type="button" data-h="289" data-s="100" data-l="50">
-                    <span>PUR//289°</span>
-                    <span class="chip-dot"></span>
-                  </button>
-                </div>
+                <input type="range" class="slider" id="sliderLightness" min="0" max="100" value="50">
               </div>
-
             </div>
           </div>
-          <!-- ========================================================= -->
-
         </div>
       </div>
     </div>
@@ -989,7 +874,8 @@
     <div class="log-panel" id="logPanel">
       <div class="log-header" id="logHeader">
         <div class="log-title-group">
-          <svg class="log-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="log-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
           <span class="log-title">Console Log</span>
@@ -1000,7 +886,6 @@
           <button class="btn-tool" id="btnClearLog" type="button">清空</button>
         </div>
       </div>
-
       <div class="log-body">
         <div class="log-body-inner">
           <div class="log-filter-bar">
@@ -1014,7 +899,6 @@
         </div>
       </div>
     </div>
-
   </div>
 
   <script>
@@ -1024,19 +908,21 @@
     let rawLogs = [];
     let isOnline = null;
     let pendingCmd = false;
+    let isDragging = false;
+    let lastSuccessfulState = null;
 
-    // 当前状态结构（对应 HSL 格式）
     let currentState = {
       light: 1,
-      mode: 2,
+      mode: 0,
+      brightness: 100,
+      white: 125,
       h: 30,
       s: 100,
-      l: 50,
-      brightness: 77,
-      white: 125
+      l: 50
     };
 
-    // HSL 转 HEX 工具函数（辅助渲染仪器界面上的微型 HEX 读数，不修改发送给后端的数据）
+    lastSuccessfulState = { ...currentState };
+
     function hslToHex(h, s, l) {
       s /= 100;
       l /= 100;
@@ -1049,11 +935,161 @@
       return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
     }
 
+    function hexToRgb(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+    }
+
+    function computeBulbColor(state) {
+      const { mode, brightness, white, h, s, l } = state;
+      if (mode === 0) {
+        // 基础开关，灯泡白色，亮度100%
+        return { h: 0, s: 0, l: 100 };
+      }
+      else if (mode === 1) {
+        // 白平衡条颜色映射：0→#ff9e44, 128→#ffffff, 255→#a3c9ff
+        const t = white / 255;
+        const stops = [
+          { pos: 0, r: 255, g: 158, b: 68 }, // 暖橙 #ff9e44
+          { pos: 0.5, r: 255, g: 255, b: 255 }, // 白   #ffffff
+          { pos: 1, r: 163, g: 201, b: 255 }  // 冷蓝 #a3c9ff
+        ];
+        let r, g, bl;
+        if (t <= 0.5) {
+          const t1 = t / 0.5;
+          r = Math.round(stops[0].r + (stops[1].r - stops[0].r) * t1);
+          g = Math.round(stops[0].g + (stops[1].g - stops[0].g) * t1);
+          bl = Math.round(stops[0].b + (stops[1].b - stops[0].b) * t1);
+        } else {
+          const t1 = (t - 0.5) / 0.5;
+          r = Math.round(stops[1].r + (stops[2].r - stops[1].r) * t1);
+          g = Math.round(stops[1].g + (stops[2].g - stops[1].g) * t1);
+          bl = Math.round(stops[1].b + (stops[2].b - stops[1].b) * t1);
+        }
+        const hsl = rgbToHsl(r, g, bl);
+        return { h: hsl.h, s: hsl.s, l: hsl.l };
+      } else if (mode === 2) {
+        // RGB 模式，直接使用 HSL
+        return { h, s, l };
+      } else if (mode === 3) {
+        // 亮度模式：白色，亮度受滑块控制
+        return { h: 0, s: 0, l: brightness };
+      }
+      return { h: 0, s: 0, l: 100 };
+    }
+
+    function applyColorVisuals(h, s, l) {
+      const hex = hslToHex(h, s, l);
+      const [r, g, b] = hexToRgb(hex);
+      document.getElementById('rgbHexReadout').textContent = hex;
+
+      const ball = document.getElementById('rgbColorDot');
+      ball.style.backgroundColor = hex;
+      ball.style.boxShadow = `0 0 100px rgba(${r}, ${g}, ${b}, 0.7)`;
+
+      const glow = document.getElementById('bulbGlow');
+      glow.style.background = `radial-gradient(circle, rgba(${r}, ${g}, ${b}, 0.2), transparent 60%)`;
+    }
+
+    function updateUIFromState(state) {
+      const { light, mode, brightness, white, h, s, l } = state;
+
+      // 开关
+      const track = document.getElementById('lightToggle');
+      const sublabel = document.getElementById('toggleSublabel');
+      const lightOn = light === 1;
+      track.classList.toggle('checked', lightOn);
+      track.setAttribute('aria-checked', String(lightOn));
+      sublabel.textContent = lightOn ? '已开启' : '已关闭';
+
+      // 灯泡开关动画
+      const ball = document.getElementById('rgbColorDot');
+      const glow = document.getElementById('bulbGlow');
+      ball.classList.toggle('light-off', !lightOn);
+      glow.classList.toggle('light-off', !lightOn);
+
+      // 模式文本
+      const txtModeName = document.getElementById('txtModeName');
+      const modeNames = {
+        0: '基础开关',
+        1: '单色 / 色温模式',
+        2: 'RGB 彩光模式 (HSL)',
+        3: '亮度模式'
+      };
+      txtModeName.textContent = modeNames[mode] || '未知';
+
+      // 显示/隐藏对应滑块
+      const controlsWrap = document.getElementById('controlsWrap');
+      const rowBrightness = document.getElementById('rowBrightness');
+      const rowWhite = document.getElementById('rowWhite');
+      const rowRGB = document.getElementById('rowRGB');
+
+      controlsWrap.classList.toggle('disabled', !lightOn);
+
+      if (mode === 0) {
+        controlsWrap.classList.remove('has-content');
+        rowBrightness.style.display = 'none';
+        rowWhite.style.display = 'none';
+        rowRGB.style.display = 'none';
+      } else {
+        controlsWrap.classList.add('has-content');
+        rowBrightness.style.display = (mode === 1 || mode === 2 || mode === 3) ? 'flex' : 'none';
+        rowWhite.style.display = (mode === 1) ? 'flex' : 'none';
+        rowRGB.style.display = (mode === 2) ? 'flex' : 'none';
+      }
+
+      // 更新滑块值和读数
+      if (typeof brightness !== 'undefined') {
+        document.getElementById('sliderBrightness').value = brightness;
+        document.getElementById('valBrightness').textContent = `${brightness}%`;
+      }
+      if (typeof white !== 'undefined') {
+        document.getElementById('sliderWhite').value = white;
+        document.getElementById('valWhite').textContent = white;
+      }
+      if (typeof h !== 'undefined' && typeof s !== 'undefined' && typeof l !== 'undefined') {
+        document.getElementById('sliderHue').value = h;
+        document.getElementById('valHue').textContent = `${String(h).padStart(3, '0')}°`;
+        document.getElementById('sliderSaturation').value = s;
+        document.getElementById('valSaturation').textContent = `${s}%`;
+        document.getElementById('sliderLightness').value = l;
+        document.getElementById('valLightness').textContent = `${l}%`;
+      }
+
+      // 计算并更新灯泡颜色
+      const bulbColor = computeBulbColor(state);
+      applyColorVisuals(bulbColor.h, bulbColor.s, bulbColor.l);
+    }
+
+    function revertToLastSuccessful() {
+      if (lastSuccessfulState) {
+        currentState = { ...lastSuccessfulState };
+        updateUIFromState(currentState);
+      }
+    }
+
     function baseUrl() {
       return document.getElementById('baseUrl').value.replace(/\/$/, '');
     }
 
-    // 折叠交互控制
     document.getElementById('btnSettingsToggle').onclick = () => {
       document.getElementById('configWrap').classList.toggle('open');
     };
@@ -1064,105 +1100,11 @@
       logPanel.classList.toggle('open');
     };
 
-    // --- 动态 UI 渲染与状态更新 ---
-    function updateUI() {
-      const { light, mode, brightness, white, h, s, l } = currentState;
-
-      // 1. 开关 UI
-      const track = document.getElementById('lightToggle');
-      const sublabel = document.getElementById('toggleSublabel');
-      const lightOn = light === 1;
-      
-      track.classList.toggle('checked', lightOn);
-      track.setAttribute('aria-checked', String(lightOn));
-      sublabel.textContent = lightOn ? '已开启' : '已关闭';
-
-      // 2. 工作模式指示标签
-      const txtModeName = document.getElementById('txtModeName');
-      if (mode === 1) {
-        txtModeName.textContent = '单色 / 色温模式';
-      } else if (mode === 2) {
-        txtModeName.textContent = 'RGB 彩光模式 (HSL)';
-      } else {
-        txtModeName.textContent = '基础开关';
-      }
-
-      // 3. 根据 mode 展开/收起组件
-      const controlsWrap = document.getElementById('controlsWrap');
-      const rowBrightness = document.getElementById('rowBrightness');
-      const rowWhite = document.getElementById('rowWhite');
-      const rowRGB = document.getElementById('rowRGB');
-
-      controlsWrap.classList.toggle('disabled', !lightOn);
-
-      if (!mode || mode === 0) {
-        controlsWrap.classList.remove('has-content');
-        rowBrightness.style.display = 'none';
-        rowWhite.style.display = 'none';
-        rowRGB.style.display = 'none';
-      } else {
-        controlsWrap.classList.add('has-content');
-        if (mode === 1) {
-          rowBrightness.style.display = 'flex';
-          rowWhite.style.display = 'flex';
-          rowRGB.style.display = 'none';
-        } else if (mode === 2) {
-          rowBrightness.style.display = 'flex';
-          rowWhite.style.display = 'none';
-          rowRGB.style.display = 'flex';
-        }
-      }
-
-      // 4. 更新 Brightness & White
-      if (typeof brightness !== 'undefined') {
-        document.getElementById('sliderBrightness').value = brightness;
-        document.getElementById('valBrightness').textContent = `${brightness}%`;
-      }
-
-      if (typeof white !== 'undefined') {
-        document.getElementById('sliderWhite').value = white;
-        document.getElementById('valWhite').textContent = white;
-      }
-
-      // 5. 更新 HSL 仪器组件渲染
-      if (typeof h !== 'undefined' && typeof s !== 'undefined' && typeof l !== 'undefined') {
-        const formattedH = String(h).padStart(3, '0');
-        document.getElementById('sliderHue').value = h;
-        document.getElementById('valHue').textContent = `${formattedH}°`;
-
-        document.getElementById('sliderSaturation').value = s;
-        document.getElementById('valSaturation').textContent = `${s}%`;
-
-        document.getElementById('sliderLightness').value = l;
-        document.getElementById('valLightness').textContent = `${l}%`;
-
-        // 渲染顶部微型 LED 与 HEX 字符串
-        const hex = hslToHex(h, s, l);
-        const colorDot = document.getElementById('rgbColorDot');
-        document.getElementById('rgbHexReadout').textContent = hex;
-        colorDot.style.backgroundColor = hex;
-        colorDot.style.boxShadow = `0 0 6px ${hex}`;
-
-        // 匹配工程预设矩阵高亮：严格三维完全匹配
-        document.querySelectorAll('.tag-chip').forEach(chip => {
-          const chipH = parseInt(chip.dataset.h);
-          const chipS = parseInt(chip.dataset.s);
-          const chipL = parseInt(chip.dataset.l);
-
-          const isMatch = (chipH === h) && (chipS === s) && (chipL === l);
-          chip.classList.toggle('active', isMatch);
-        });
-      }
-    }
-
-    // 指令发送函数
     async function sendCmd(partialState) {
       if (pendingCmd) return;
       setPending(true);
-
       const payload = { ...currentState, ...partialState };
       const body = JSON.stringify(payload);
-
       try {
         const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}/cmd`, {
           method: 'POST',
@@ -1170,8 +1112,16 @@
         });
         const text = await res.text();
         log(`POST /api/device/${DEVICE_ID}/cmd ${body} -> ${res.status} ${text}`);
+        if (res.ok) {
+          Object.assign(currentState, partialState);
+          lastSuccessfulState = { ...currentState };
+        } else {
+          log(`指令未成功，回退到上一次有效状态`);
+          revertToLastSuccessful();
+        }
       } catch (e) {
-        log(`发送指令异常: ${e.message}`);
+        log(`发送指令异常: ${e.message}，回退状态`);
+        revertToLastSuccessful();
       } finally {
         setPending(false);
       }
@@ -1183,13 +1133,11 @@
       document.getElementById('lightToggle').classList.toggle('pending', pending);
     }
 
-    // --- 事件绑定 ---
     document.getElementById('lightToggle').onclick = () => {
       if (isOnline === false || pendingCmd) return;
       sendCmd({ light: currentState.light === 1 ? 0 : 1 });
     };
 
-    // 亮度 Slider
     const sliderBrightness = document.getElementById('sliderBrightness');
     sliderBrightness.oninput = (e) => {
       document.getElementById('valBrightness').textContent = `${e.target.value}%`;
@@ -1198,80 +1146,59 @@
       sendCmd({ brightness: parseInt(e.target.value) });
     };
 
-    // 色温 Slider
     const sliderWhite = document.getElementById('sliderWhite');
     sliderWhite.oninput = (e) => {
       document.getElementById('valWhite').textContent = e.target.value;
+      // 色温模式实时预览灯泡颜色
+      if (currentState.mode === 1) {
+        const col = computeBulbColor({ ...currentState, white: parseInt(e.target.value) });
+        applyColorVisuals(col.h, col.s, col.l);
+      }
     };
     sliderWhite.onchange = (e) => {
       sendCmd({ white: parseInt(e.target.value) });
     };
 
-    // Hue Slider
+    // HSL 滑块保留原有的拖动实时预览逻辑
     const sliderHue = document.getElementById('sliderHue');
-    sliderHue.oninput = (e) => {
-      currentState.h = parseInt(e.target.value);
-      const formattedH = String(currentState.h).padStart(3, '0');
-      document.getElementById('valHue').textContent = `${formattedH}°`;
+    sliderHue.addEventListener('input', () => {
+      isDragging = true;
+      currentState.h = parseInt(sliderHue.value);
+      document.getElementById('valHue').textContent = `${String(currentState.h).padStart(3, '0')}°`;
+      applyColorVisuals(currentState.h, currentState.s, currentState.l);
+    });
+    sliderHue.addEventListener('change', () => {
+      isDragging = false;
+      sendCmd({ h: currentState.h });
+    });
 
-      // 实时计算微型 HEX 预览
-      const hex = hslToHex(currentState.h, currentState.s, currentState.l);
-      const colorDot = document.getElementById('rgbColorDot');
-      document.getElementById('rgbHexReadout').textContent = hex;
-      colorDot.style.backgroundColor = hex;
-      colorDot.style.boxShadow = `0 0 6px ${hex}`;
-    };
-    sliderHue.onchange = (e) => {
-      sendCmd({ h: parseInt(e.target.value) });
-    };
-
-    // Saturation Slider
     const sliderSaturation = document.getElementById('sliderSaturation');
-    sliderSaturation.oninput = (e) => {
-      currentState.s = parseInt(e.target.value);
+    sliderSaturation.addEventListener('input', () => {
+      isDragging = true;
+      currentState.s = parseInt(sliderSaturation.value);
       document.getElementById('valSaturation').textContent = `${currentState.s}%`;
+      applyColorVisuals(currentState.h, currentState.s, currentState.l);
+    });
+    sliderSaturation.addEventListener('change', () => {
+      isDragging = false;
+      sendCmd({ s: currentState.s });
+    });
 
-      const hex = hslToHex(currentState.h, currentState.s, currentState.l);
-      const colorDot = document.getElementById('rgbColorDot');
-      document.getElementById('rgbHexReadout').textContent = hex;
-      colorDot.style.backgroundColor = hex;
-    };
-    sliderSaturation.onchange = (e) => {
-      sendCmd({ s: parseInt(e.target.value) });
-    };
-
-    // Lightness Slider
     const sliderLightness = document.getElementById('sliderLightness');
-    sliderLightness.oninput = (e) => {
-      currentState.l = parseInt(e.target.value);
+    sliderLightness.addEventListener('input', () => {
+      isDragging = true;
+      currentState.l = parseInt(sliderLightness.value);
       document.getElementById('valLightness').textContent = `${currentState.l}%`;
+      applyColorVisuals(currentState.h, currentState.s, currentState.l);
+    });
+    sliderLightness.addEventListener('change', () => {
+      isDragging = false;
+      sendCmd({ l: currentState.l });
+    });
 
-      const hex = hslToHex(currentState.h, currentState.s, currentState.l);
-      const colorDot = document.getElementById('rgbColorDot');
-      document.getElementById('rgbHexReadout').textContent = hex;
-      colorDot.style.backgroundColor = hex;
-    };
-    sliderLightness.onchange = (e) => {
-      sendCmd({ l: parseInt(e.target.value) });
-    };
-
-    // 快捷 Preset 矩阵代码标签点击
-    document.getElementById('presetColors').onclick = (e) => {
-      const chip = e.target.closest('.tag-chip');
-      if (!chip) return;
-
-      const h = parseInt(chip.dataset.h);
-      const s = parseInt(chip.dataset.s);
-      const l = parseInt(chip.dataset.l);
-
-      sendCmd({ h, s, l });
-    };
-
-    // --- 状态拉取与 WebSocket ---
     async function refreshStatus() {
       const btnRefresh = document.getElementById('btnRefresh');
       btnRefresh.disabled = true;
-
       try {
         const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}`);
         if (!res.ok) {
@@ -1281,13 +1208,17 @@
         }
         const data = await res.json();
         log(`GET /api/device/${DEVICE_ID} -> ${JSON.stringify(data)}`);
-
         renderOnlineState(data.online === 1);
-
         try {
           const stateObj = typeof data.state === 'string' ? JSON.parse(data.state) : data.state;
-          currentState = { ...currentState, ...stateObj };
-          updateUI();
+          if (!isDragging) {
+            currentState = { ...currentState, ...stateObj };
+            updateUIFromState(currentState);
+          } else {
+            if (stateObj.light !== undefined) currentState.light = stateObj.light;
+            if (stateObj.mode !== undefined) currentState.mode = stateObj.mode;
+            updateUIFromState(currentState);
+          }
         } catch (e) {
           log(`解析 state 字段失败`);
         }
@@ -1307,13 +1238,10 @@
       document.getElementById('deviceCard').classList.toggle('offline', !online);
     }
 
-    // --- 日志终端 ---
     function renderLogs() {
       const el = document.getElementById('log');
       el.innerHTML = '';
-
       const filtered = rawLogs.filter(item => currentFilter === 'ALL' || item.badgeText === currentFilter);
-
       filtered.forEach(item => {
         const line = document.createElement('div');
         line.className = 'log-line';
@@ -1324,18 +1252,15 @@
         `;
         el.appendChild(line);
       });
-
       el.scrollTop = el.scrollHeight;
       document.getElementById('logCount').textContent = rawLogs.length;
     }
 
     function log(msg) {
       const time = new Date().toLocaleTimeString();
-
       let badgeType = 'badge-info';
       let badgeText = 'INFO';
       let cleanMsg = msg;
-
       if (msg.startsWith('GET')) {
         badgeType = 'badge-get';
         badgeText = 'GET';
@@ -1352,7 +1277,6 @@
         badgeType = 'badge-err';
         badgeText = 'ERR';
       }
-
       const htmlMsg = cleanMsg.replace(/(->|\s)?(\{[\s\S]*\}|\[[\s\S]*\])/, (match, p1 = '', p2 = '') => {
         try {
           const compactJson = JSON.stringify(JSON.parse(p2));
@@ -1361,7 +1285,6 @@
           return `${p1} <span class="log-data">${p2}</span>`;
         }
       });
-
       rawLogs.push({ time, badgeType, badgeText, plainMsg: cleanMsg, htmlMsg });
       if (rawLogs.length > MAX_LOG_COUNT) rawLogs.shift();
       renderLogs();
@@ -1390,7 +1313,6 @@
     function connectWs() {
       const wsUrl = baseUrl().replace(/^http/, 'ws') + '/ws';
       const ws = new WebSocket(wsUrl);
-
       ws.onopen = () => log(`WS 已连接: ${wsUrl}`);
       ws.onmessage = () => refreshStatus();
       ws.onclose = () => log('WS 已断开');
@@ -1398,6 +1320,7 @@
     }
 
     window.onload = () => {
+      updateUIFromState(currentState);
       refreshStatus();
       connectWs();
     };
