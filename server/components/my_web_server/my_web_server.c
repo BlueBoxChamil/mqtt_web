@@ -1,8 +1,8 @@
 /*
  * @Author: error: git config user.name & please set dead value or install git
  * @Date: 2026-07-20 09:13:18
- * @LastEditTime: 2026-07-20 17:21:32
- * @FilePath: /components/my_web_server/my_web_server.c
+ * @LastEditTime: 2026-07-23 15:30:22
+ * @FilePath: \server\components\my_web_server\my_web_server.c
  * @Description:
  * Copyright (c) 2026 by error: git config user.name & please set dead value or install git, All Rights Reserved.
  */
@@ -73,6 +73,7 @@ static void api_device_list(struct mg_connection *c)
         cJSON_AddStringToObject(obj, "name", list[i].name);
         cJSON_AddStringToObject(obj, "type", list[i].type);
         cJSON_AddNumberToObject(obj, "online", list[i].online);
+
         cJSON_AddItemToArray(array, obj);
     }
     char *json = cJSON_Print(array);
@@ -100,8 +101,12 @@ static void api_device_get(struct mg_connection *c, struct mg_str id)
     cJSON_AddNumberToObject(root, "id", device.id);
     cJSON_AddStringToObject(root, "name", device.name);
     cJSON_AddStringToObject(root, "type", device.type);
+    cJSON_AddStringToObject(root, "model", device.model);
+    cJSON_AddStringToObject(root, "fw_version", device.fw_version);
+    cJSON_AddStringToObject(root, "mac", device.mac);
     cJSON_AddNumberToObject(root, "online", device.online);
     cJSON_AddStringToObject(root, "state", device.state);
+    cJSON_AddStringToObject(root, "capabilities", device.capabilities);
 
     char *json = cJSON_Print(root);
     mg_http_reply(
@@ -181,7 +186,7 @@ static void http_callback(struct mg_connection *c, int ev, void *ev_data)
             return;
         }
 
-        mg_http_reply(c, 404, "Access-Control-Allow-Origin: *\r\n" ,"not found\n");
+        mg_http_reply(c, 404, "Access-Control-Allow-Origin: *\r\n", "not found\n");
         // mg_http_reply(c, 200, "", "hello sss\n");
     }
 
@@ -230,6 +235,7 @@ static void *web_task(void *arg)
             {
                 // printf("into ws_client\n");
                 mg_ws_send(ws_client, msg.data, strlen(msg.data), WEBSOCKET_OP_TEXT);
+                // printf("send web=%s\n", msg.data);
             }
         }
     }

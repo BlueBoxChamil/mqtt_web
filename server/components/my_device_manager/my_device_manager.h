@@ -1,7 +1,7 @@
 /*
  * @Author: error: git config user.name & please set dead value or install git
  * @Date: 2026-07-20 09:13:18
- * @LastEditTime: 2026-07-20 15:03:01
+ * @LastEditTime: 2026-07-23 14:42:57
  * @FilePath: /components/my_device_manager/my_device_manager.h
  * @Description:
  * Copyright (c) 2026 by error: git config user.name & please set dead value or install git, All Rights Reserved.
@@ -39,7 +39,7 @@ extern "C"
         char model[32];        // info上报:设备型号
         char fw_version[16];   // info上报:固件版本号,如 "1.0.3"
         char mac[18];          // info上报:MAC 地址,如 "AA:BB:CC:DD:EE:FF" + '\0'
-        char capabilities[64]; // info上报:能力列表,存成逗号分隔字符串,如 "switch,brightness"
+        char capabilities[256]; // info上报:能力列表,存成逗号分隔字符串,如 "switch,brightness"
         uint8_t online;
         char state[512];
         time_t last_update;
