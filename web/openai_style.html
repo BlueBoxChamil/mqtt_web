@@ -1537,7 +1537,10 @@
                 setPending(false);
             }
 
-            await refreshStatus();
+            //改为ws未连接时才刷新，避免mqtt回复消息不及时导致闪烁
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                await refreshStatus();
+            }
         }
 
         function setPending(pending) {
