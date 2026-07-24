@@ -9,8 +9,15 @@ static const char *sub_topics[] = {
     "device/1/state", // 设备 → 服务器 上报当前状态
     //"device/1/cmd",  // 服务器 → 设备 下发控制命令,server 不用订阅
     "device/1/info", // 设备 → 服务器 设备信息注册
+    "device/1/lwt",  // 设备 → 服务器 代发遗嘱消息，设备异常掉线时会收到
 };
 static MQTTClient client;
+static my_mqtt_will_t will =
+    {
+        .topic = "device/1/lwt",
+        .qos = 1,
+        .retained = 1,
+};
 static mqtt_recv_callback_t recv_cb = NULL;
 
 static my_mqtt_queue_t my_mqtt_queue[QUEUE_SIZE];
@@ -76,7 +83,7 @@ static void *my_queue_thread_task(void *arg)
     while (1)
     {
         my_mqtt_queue_pop(&msg);
-        
+
         // 传入到my_device_manager_update中处理
         if (recv_cb)
         {
@@ -114,6 +121,7 @@ static int my_mqtt_message_callback(
 int my_mqtt_init(void)
 {
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    MQTTClient_willOptions will_opts = MQTTClient_willOptions_initializer;
 
     // 创建client
     int ret = MQTTClient_create(
@@ -124,14 +132,20 @@ int my_mqtt_init(void)
         NULL);
     if (ret != MQTTCLIENT_SUCCESS)
     {
-        printf(
-            "mqtt create failed:%d\n",
-            ret);
+        printf("mqtt create failed:%d\n", ret);
         return -1;
     }
     // 设置用户名密码
     conn_opts.username = MQTT_USERNAME;
     conn_opts.password = MQTT_PASSWORD;
+
+    will_opts.topicName = will.topic;
+    will_opts.message = will.message;
+    will_opts.qos = will.qos;
+    will_opts.retained = will.retained;
+    conn_opts.will = &will_opts;
+
+    printf("mqtt will registered: topic=%s payload=%s\n", will.topic, will.message);
 
     /*
      * 设置异步接收回调

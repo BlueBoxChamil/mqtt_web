@@ -124,7 +124,7 @@ static void my_device_manager_info_update(const char *topic, const char *json)
     if (dev == NULL)
         return;
 
-    dev->last_update = time(NULL);   // 加这一行:收到 info 也算一次心跳
+    dev->last_update = time(NULL); // 加这一行:收到 info 也算一次心跳
 
     cJSON *root = cJSON_Parse(json);
 
@@ -190,6 +190,14 @@ static void my_device_manager_info_update(const char *topic, const char *json)
     }
     cJSON_Delete(root);
 }
+// 解析设备遗嘱信息
+static void my_device_manager_lwt_update(const char *topic, const char *json)
+{
+    printf("\ndevice lwt update\n");
+    // 单个设备暂不解析
+    // char msg[64];
+    // snprintf(msg, sizeof(msg), "{\"id\":%u,\"online\":0}", devices[0].id);
+}
 
 void my_device_manager_register_callback(device_state_callback_t cb)
 {
@@ -207,18 +215,19 @@ static void my_device_manager_update(const char *topic, const char *json)
     if (strstr(topic, "/state"))
     {
         my_devide_manager_state_update(topic, json);
-        if (state_callback)
-        {
-            state_callback(json);
-        }
     }
     else if (strstr(topic, "/info"))
     {
         my_device_manager_info_update(topic, json);
-        if (state_callback)
-        {
-            state_callback(json);
-        }
+    }
+    else if (strstr(topic, "/lwt"))
+    {
+        my_device_manager_lwt_update(topic, json);
+    }
+
+    if (state_callback)
+    {
+        state_callback(json);
     }
 }
 
@@ -277,9 +286,9 @@ void my_device_manager_init(void)
     memset(devices, 0, sizeof(devices));
     my_mqtt_register_callback(my_device_manager_update);
 
-    pthread_t tid;
-    pthread_create(&tid, NULL, my_device_manager_check_task, NULL);
-    pthread_detach(tid);
+    // pthread_t tid;
+    // pthread_create(&tid, NULL, my_device_manager_check_task, NULL);
+    // pthread_detach(tid);
 
     printf("device manager init\n");
 }
