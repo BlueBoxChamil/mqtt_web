@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus // ESP Device Universe Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030305;
+            color: #ededed;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-panel {
+            background: rgba(12, 12, 18, 0.85);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .corner-marker {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: rgba(255, 255, 255, 0.12);
+            pointer-events: none;
+        }
+        .corner-tl { top: 28px; left: 28px; border-top: 1px solid; border-left: 1px solid; }
+        .corner-tr { top: 28px; right: 28px; border-top: 1px solid; border-right: 1px solid; }
+        .corner-bl { bottom: 28px; left: 28px; border-bottom: 1px solid; border-left: 1px solid; }
+        .corner-br { bottom: 28px; right: 28px; border-bottom: 1px solid; border-right: 1px solid; }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex items-center justify-between">
+
+    <!-- 四角工程定位符 -->
+    <div class="corner-marker corner-tl"></div>
+    <div class="corner-marker corner-tr"></div>
+    <div class="corner-marker corner-bl"></div>
+    <div class="corner-marker corner-br"></div>
+
+    <!-- 顶部状态栏 -->
+    <header class="absolute top-8 left-12 z-10 flex items-center space-x-4 pointer-events-none">
+        <div class="flex items-center space-x-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="text-xs uppercase tracking-widest text-zinc-400 mono">NEXUS // CORE</span>
+        </div>
+        <span class="text-zinc-700">/</span>
+        <span class="text-xs text-zinc-500 mono" id="system-status">7 NODES ONLINE</span>
+    </header>
+
+    <!-- 初始中央状态指引胶囊 -->
+    <div id="initialHintPill" class="absolute top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-all duration-500">
+        <div class="px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 backdrop-blur-md flex items-center space-x-3 text-xs text-zinc-400 mono shadow-2xl">
+            <span class="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-ping"></span>
+            <span>SPACE UNIVERSE READY · SELECT NODE TO INSPECT</span>
+        </div>
+    </div>
+
+    <!-- 右上角：实时系统遥测参数 -->
+    <div class="absolute top-8 right-12 z-10 hidden md:flex items-center space-x-6 text-xs mono text-zinc-500 pointer-events-none">
+        <div>BUS: <span class="text-zinc-300">12ms</span></div>
+        <div>LOAD: <span class="text-zinc-300">3.8%</span></div>
+        <div id="liveClock" class="text-zinc-400">00:00:00</div>
+    </div>
+
+    <!-- 左下角：微型拓扑状态统计卡片 -->
+    <div class="absolute bottom-16 left-12 z-10 pointer-events-none hidden lg:flex items-center space-x-3 px-3.5 py-2 rounded-xl glass-panel text-[11px] mono text-zinc-400 shadow-xl">
+        <span class="text-zinc-200 font-medium tracking-wider">TOPOLOGY:</span>
+        <span class="text-zinc-400">MCU: <strong class="text-zinc-200">1</strong></span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-400">SENSOR: <strong class="text-zinc-200">1</strong></span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-400">CAM: <strong class="text-zinc-200">1</strong></span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-400">RELAY: <strong class="text-zinc-200">1</strong></span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-400">OTHER: <strong class="text-zinc-200">3</strong></span>
+    </div>
+
+    <!-- 底部操作提示 -->
+    <footer class="absolute bottom-8 left-12 z-10 pointer-events-none flex items-center space-x-6">
+        <p class="text-sm text-zinc-500 tracking-wider">点击任意设备节点以聚焦控制面板 · 移动鼠标探索数据流场</p>
+        <span class="text-zinc-800">|</span>
+        <span class="text-xs text-zinc-600 mono">SYS.GRID // v2.6.2</span>
+    </footer>
+
+    <!-- 主画布 -->
+    <main class="w-full h-full relative cursor-grab active:cursor-grabbing" id="canvas-container">
+        <canvas id="universeCanvas" class="block w-full h-full"></canvas>
+    </main>
+
+    <!-- 动态控制面板 -->
+    <aside id="controlPanel" class="absolute w-[440px] glass-panel rounded-2xl z-30 flex flex-col justify-between opacity-0 pointer-events-none scale-95 translate-y-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl">
+        <div class="p-6 border-b border-white/8 flex items-start justify-between">
+            <div>
+                <div class="flex items-center space-x-2 mb-2">
+                    <span id="panelDeviceType" class="text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white/5 text-zinc-300 mono border border-white/10">TYPE</span>
+                    <span id="panelDeviceStatus" class="text-xs uppercase tracking-wider text-emerald-400 mono flex items-center font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 animate-pulse"></span> ONLINE
+                    </span>
+                </div>
+                <h2 id="panelDeviceName" class="text-2xl font-semibold tracking-tight text-white mt-1">Device Name</h2>
+            </div>
+            <button onclick="closePanel()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="p-6 max-h-[60vh] overflow-y-auto no-scrollbar space-y-7">
+            <div class="space-y-3">
+                <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">硬件参数与地址</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                        <span class="block text-xs text-zinc-500 mb-1.5">物理地址 (MAC/IP)</span>
+                        <span id="panelDeviceAddress" class="text-sm font-medium text-zinc-200 mono">0x00:00:00</span>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                        <span class="block text-xs text-zinc-500 mb-1.5">信号强度 (RSSI)</span>
+                        <span id="panelDeviceRssi" class="text-sm font-medium text-zinc-200 mono">-64 dBm</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3" id="dynamicControlArea">
+                <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">控制中心</h3>
+                <div class="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-zinc-300">节点运行状态</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" id="devicePowerToggle">
+                            <div class="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-white peer-checked:text-black"></div>
+                        </label>
+                    </div>
+                    <div class="space-y-2 pt-3 border-t border-white/8">
+                        <div class="flex justify-between text-xs text-zinc-400">
+                            <span>PWM 输出功率</span>
+                            <span class="mono text-zinc-200 font-medium" id="sliderVal">85%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="85" class="w-full accent-white bg-white/15 rounded-lg appearance-none h-1.5 cursor-pointer" oninput="document.getElementById('sliderVal').innerText = this.value + '%'">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">遥测日志流</h3>
+                <div class="p-4 rounded-xl bg-black/50 border border-white/5 font-mono text-xs text-zinc-400 space-y-2">
+                    <p class="text-emerald-400/90">[SYSTEM] 节点连接稳定，握手成功。</p>
+                    <p class="text-zinc-500">[TELEMETRY] 核心温度: 38.4°C / 负载: 4.2%</p>
+                    <p class="text-zinc-500">[PACKET] 收到来自总线的状态同步帧。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-5 border-t border-white/8 flex items-center justify-between bg-white/[0.01]">
+            <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-zinc-300 transition-colors mono">重启设备</button>
+            <button onclick="closePanel()" class="px-5 py-2 rounded-lg bg-white text-black hover:bg-zinc-200 text-sm font-medium transition-colors">确认关闭</button>
+        </div>
+    </aside>
+
+    <script>
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toTimeString().split(' ')[0];
+        }, 1000);
+
+        const canvas = document.getElementById('universeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const devices = [
+            { id: 'ESP-32S3-01', name: 'Matrix Core 核心控制器', type: 'MCU Hub', address: '192.168.1.101', rssi: '-52 dBm', x: 0.30, y: 0.38, radius: 4.5, baseAlpha: 0.9 },
+            { id: 'ESP-8266-02', name: 'Balcony Weather Node', type: 'Sensor', address: '192.168.1.105', rssi: '-71 dBm', x: 0.65, y: 0.28, radius: 3.5, baseAlpha: 0.6 },
+            { id: 'ESP32-CAM-03', name: 'Entrance Vision 摄像头', type: 'Camera', address: '192.168.1.112', rssi: '-60 dBm', x: 0.25, y: 0.68, radius: 4, baseAlpha: 0.75 },
+            { id: 'ESP32-REL-04', name: 'Garage Relay Array', type: 'Relay', address: '192.168.1.120', rssi: '-68 dBm', x: 0.70, y: 0.65, radius: 3.5, baseAlpha: 0.5 },
+            { id: 'ESP32-CLK-05', name: 'Living Room Matrix Clock', type: 'Clock', address: '192.168.1.108', rssi: '-55 dBm', x: 0.48, y: 0.22, radius: 3.5, baseAlpha: 0.7 },
+            { id: 'ESP32-USB-06', name: 'Desk Hub Controller', type: 'USB Hub', address: '192.168.1.115', rssi: '-48 dBm', x: 0.38, y: 0.78, radius: 3, baseAlpha: 0.6 },
+            { id: 'ESP32-LED-07', name: 'Ambient Light Strip', type: 'Light', address: '192.168.1.130', rssi: '-59 dBm', x: 0.60, y: 0.48, radius: 4, baseAlpha: 0.8 }
+        ];
+
+        let nodes = devices.map((d) => ({
+            ...d,
+            xPos: d.x * width,
+            yPos: d.y * height,
+            targetX: d.x * width,
+            targetY: d.y * height,
+            originX: d.x * width,
+            originY: d.y * height,
+            vx: (Math.random() - 0.5) * 0.15,
+            vy: (Math.random() - 0.5) * 0.15,
+            breathPhase: Math.random() * Math.PI * 2,
+            breathSpeed: 0.012 + Math.random() * 0.015,
+            isFocused: false
+        }));
+
+        const ambientParticles = Array.from({ length: 30 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.08,
+            vy: (Math.random() - 0.5) * 0.08,
+            radius: 1.0 + Math.random() * 1.5,
+            alpha: 0.1 + Math.random() * 0.2
+        }));
+
+        let focusedNode = null;
+        let mouse = { x: -1000, y: -1000, hoverNode: null };
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            
+            if (focusedNode) return;
+
+            let found = null;
+            for (let node of nodes) {
+                let dx = node.xPos - mouse.x;
+                let dy = node.yPos - mouse.y;
+                if (Math.sqrt(dx * dx + dy * dy) < 35) {
+                    found = node;
+                    break;
+                }
+            }
+            mouse.hoverNode = found;
+            canvas.style.cursor = found ? 'pointer' : 'grab';
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = -1000;
+            mouse.y = -1000;
+            mouse.hoverNode = null;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (mouse.hoverNode && !focusedNode) {
+                selectNode(mouse.hoverNode);
+            }
+        });
+
+        function selectNode(node) {
+            focusedNode = node;
+            node.isFocused = true;
+
+            const hintPill = document.getElementById('initialHintPill');
+            hintPill.style.opacity = '0';
+            hintPill.style.transform = 'translate(-50%, -20px)';
+
+            const targetCenterX = window.innerWidth * 0.35;
+            const targetCenterY = window.innerHeight * 0.5;
+
+            nodes.forEach(n => {
+                if (n === node) {
+                    n.targetX = targetCenterX;
+                    n.targetY = targetCenterY;
+                } else {
+                    n.targetX = n.originX + (n.originX - window.innerWidth * 0.5) * 0.25;
+                    n.targetY = n.originY + (n.originY - window.innerHeight * 0.5) * 0.25;
+                }
+            });
+
+            document.getElementById('panelDeviceName').innerText = node.name;
+            document.getElementById('panelDeviceType').innerText = node.type;
+            document.getElementById('panelDeviceAddress').innerText = node.address;
+            document.getElementById('panelDeviceRssi').innerText = node.rssi;
+            
+            const panel = document.getElementById('controlPanel');
+            panel.classList.remove('opacity-0', 'pointer-events-none', 'scale-95', 'translate-y-3');
+        }
+
+        function closePanel() {
+            if (!focusedNode) return;
+            const panel = document.getElementById('controlPanel');
+            panel.classList.add('opacity-0', 'pointer-events-none', 'scale-95', 'translate-y-3');
+
+            const hintPill = document.getElementById('initialHintPill');
+            hintPill.style.opacity = '1';
+            hintPill.style.transform = 'translate(-50%, 0)';
+
+            nodes.forEach(n => {
+                n.isFocused = false;
+                n.targetX = n.originX;
+                n.targetY = n.originY;
+            });
+
+            setTimeout(() => {
+                focusedNode = null;
+            }, 500);
+        }
+
+        let rotationAngle = 0;
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            rotationAngle += 0.004;
+
+            let bgGlow = ctx.createRadialGradient(width * 0.5, height * 0.5, 50, width * 0.5, height * 0.5, width * 0.7);
+            bgGlow.addColorStop(0, 'rgba(25, 25, 38, 0.22)');
+            bgGlow.addColorStop(1, 'rgba(3, 3, 5, 0)');
+            ctx.fillStyle = bgGlow;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.018)';
+            const gridSize = 64;
+            for (let x = 32; x < width; x += gridSize) {
+                for (let y = 32; y < height; y += gridSize) {
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+
+            ambientParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${focusedNode ? p.alpha * 0.25 : p.alpha})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    let dx = nodes[i].xPos - nodes[j].xPos;
+                    let dy = nodes[i].yPos - nodes[j].yPos;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 300) {
+                        let isConnectedToHover = (nodes[i] === mouse.hoverNode || nodes[j] === mouse.hoverNode);
+                        let isConnectedToFocused = focusedNode && (nodes[i] === focusedNode || nodes[j] === focusedNode);
+                        
+                        let lineAlpha = 0.04 * (1 - dist / 300);
+                        if (isConnectedToHover) lineAlpha = 0.3;
+                        if (isConnectedToFocused) lineAlpha = 0.18;
+                        if (focusedNode && !isConnectedToFocused) lineAlpha *= 0.25;
+
+                        ctx.strokeStyle = (isConnectedToHover || isConnectedToFocused) ? 'rgba(255, 255, 255, 0.25)' : `rgba(255, 255, 255, ${lineAlpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(nodes[i].xPos, nodes[i].yPos);
+                        ctx.lineTo(nodes[j].xPos, nodes[j].yPos);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            let panelIsOnRight = true;
+
+            if (focusedNode) {
+                const panel = document.getElementById('controlPanel');
+                const panelWidth = 440;
+                const panelHeight = 460;
+                const gap = 85;
+
+                let targetLeft = focusedNode.xPos + gap;
+                
+                if (targetLeft + panelWidth > width - 30) {
+                    targetLeft = focusedNode.xPos - panelWidth - gap;
+                    panelIsOnRight = false;
+                }
+
+                let targetTop = focusedNode.yPos - panelHeight / 2;
+                targetTop = Math.max(30, Math.min(height - panelHeight - 30, targetTop));
+
+                panel.style.left = targetLeft + 'px';
+                panel.style.top = targetTop + 'px';
+            }
+
+            nodes.forEach(node => {
+                let ease = focusedNode ? 0.06 : 0.035;
+                
+                if (!node.isFocused && !focusedNode) {
+                    node.originX += node.vx;
+                    node.originY += node.vy;
+                    if (node.originX < 80 || node.originX > width - 80) node.vx *= -1;
+                    if (node.originY < 80 || node.originY > height - 80) node.vy *= -1;
+
+                    let mdx = node.originX - mouse.x;
+                    let mdy = node.originY - mouse.y;
+                    let mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+                    let pushX = 0, pushY = 0;
+                    if (mDist < 160 && mDist > 0) {
+                        let force = (1 - mDist / 160) * 10;
+                        pushX = (mdx / mDist) * force;
+                        pushY = (mdy / mDist) * force;
+                    }
+
+                    node.targetX = node.originX + pushX;
+                    node.targetY = node.originY + pushY;
+                }
+
+                node.xPos += (node.targetX - node.xPos) * ease;
+                node.yPos += (node.targetY - node.yPos) * ease;
+
+                node.breathPhase += node.breathSpeed;
+                let pulse = Math.sin(node.breathPhase);
+                let currentRadius = node.radius + pulse * (node.isFocused ? 1.5 : 0.8);
+
+                let alpha = node.baseAlpha;
+                if (focusedNode && !node.isFocused) {
+                    alpha = 0.28; 
+                } else if (node.isFocused || node === mouse.hoverNode) {
+                    alpha = 1.0;
+                }
+
+                if (node.isFocused) {
+                    ctx.save();
+                    ctx.translate(node.xPos, node.yPos);
+                    ctx.rotate(rotationAngle);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 6]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 36, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    let targetGlow = ctx.createRadialGradient(node.xPos, node.yPos, 0, node.xPos, node.yPos, 65);
+                    targetGlow.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+                    targetGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = targetGlow;
+                    ctx.beginPath();
+                    ctx.arc(node.xPos, node.yPos, 65, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    let isHovered = (node === mouse.hoverNode);
+                    let glowRadius = isHovered ? 45 : 22 + pulse * 4;
+                    let glowAlpha = isHovered ? 0.15 : 0.04 + pulse * 0.015;
+
+                    let glowGradient = ctx.createRadialGradient(node.xPos, node.yPos, 0, node.xPos, node.yPos, glowRadius);
+                    glowGradient.addColorStop(0, `rgba(255, 255, 255, ${glowAlpha})`);
+                    glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = glowGradient;
+                    ctx.beginPath();
+                    ctx.arc(node.xPos, node.yPos, glowRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = node.isFocused ? '#ffffff' : `rgba(230, 230, 240, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(node.xPos, node.yPos, currentRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                let isHovered = (node === mouse.hoverNode);
+                let textAlpha = alpha;
+                if (isHovered && !node.isFocused) textAlpha = 1.0;
+                
+                ctx.font = (node.isFocused || isHovered) ? '500 13px Inter, sans-serif' : '300 12px Inter, sans-serif';
+                ctx.fillStyle = (node.isFocused || isHovered) ? 'rgba(255, 255, 255, 0.95)' : `rgba(255, 255, 255, ${textAlpha * 0.8})`;
+                
+                let textXOffset = 22;
+                let textAlign = 'left';
+
+                if (node.isFocused) {
+                    if (panelIsOnRight) {
+                        textXOffset = -75;
+                        textAlign = 'right';
+                    } else {
+                        textXOffset = 75;
+                        textAlign = 'left';
+                    }
+                }
+
+                ctx.textAlign = textAlign;
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.name, node.xPos + textXOffset, node.yPos);
+                
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
