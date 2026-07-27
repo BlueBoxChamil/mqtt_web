@@ -370,20 +370,23 @@ void led_strip_hsl2rgb(uint32_t h, uint32_t s, uint32_t l,
     *b = (uint32_t)(rgb[2] * 255);
 }
 
-void white_to_rgb_int(uint8_t white, uint32_t *r, uint32_t *g, uint32_t *b) {
+void white_to_rgb_int(uint8_t white, uint32_t *r, uint32_t *g, uint32_t *b)
+{
     const uint8_t stops[3][3] = {
-        {255, 158,  68},
+        {255, 158, 68},
         {255, 255, 255},
-        {163, 201, 255}
-    };
+        {163, 201, 255}};
 
-    if (white <= 127) {
+    if (white <= 127)
+    {
         // 0~127 映射到 0~255 的混合因子
-        uint16_t factor = ((uint16_t)white * 255) / 127;  // 0..255
+        uint16_t factor = ((uint16_t)white * 255) / 127; // 0..255
         *r = stops[0][0] + ((stops[1][0] - stops[0][0]) * factor + 128) / 255;
         *g = stops[0][1] + ((stops[1][1] - stops[0][1]) * factor + 128) / 255;
         *b = stops[0][2] + ((stops[1][2] - stops[0][2]) * factor + 128) / 255;
-    } else {
+    }
+    else
+    {
         // 128~255 映射到 0~255 的混合因子
         uint16_t factor = ((uint16_t)(white - 128) * 255) / 127;
         *r = stops[1][0] + ((stops[2][0] - stops[1][0]) * factor + 128) / 255;
@@ -554,23 +557,24 @@ static void mqtt5_app_start(void)
         .topic_alias_maximum = 2,
         .request_resp_info = true,
         .request_problem_info = true,
-        .will_delay_interval = 10,
+        .will_delay_interval = 0,
         .payload_format_indicator = true,
         .message_expiry_interval = 10,
-        .response_topic = "/test/response",
-        .correlation_data = "123456",
-        .correlation_data_len = 6,
+        // .response_topic = "/test/response",
+        // .correlation_data = "123456",
+        // .correlation_data_len = 6,
     };
 
     esp_mqtt_client_config_t mqtt5_cfg = {
         .broker.address.uri = CONFIG_BROKER_URL,
         .session.protocol_ver = MQTT_PROTOCOL_V_5,
+        .session.keepalive = 5,
         .network.disable_auto_reconnect = true,
         .credentials.username = "user1",
         .credentials.authentication.password = "1",
-        .session.last_will.topic = "/topic/will",
-        .session.last_will.msg = "i will leave",
-        .session.last_will.msg_len = 12,
+        .session.last_will.topic = "device/1/lwt",
+        .session.last_will.msg = "{\"id\":1,\"online\":0}",
+        .session.last_will.msg_len = strlen("{\"id\":1,\"online\":0}"),
         .session.last_will.qos = 1,
         .session.last_will.retain = true,
     };
@@ -632,18 +636,6 @@ void app_main(void)
     ESP_ERROR_CHECK(rmt_enable(led_chan));
 
     my_set_light(&my_state);
-    // for (int i = 0; i < EXAMPLE_LED_NUMBERS; i++)
-    // {
-    //     // Build RGB pixels
-    //     // hue = j * 360 / EXAMPLE_LED_NUMBERS + start_rgb;
-    //     led_strip_hsl2rgb(30, 100, 50, &red, &green, &blue);
-    //     led_strip_pixels[i * 3 + 0] = green; // g
-    //     led_strip_pixels[i * 3 + 1] = red;   // r
-    //     led_strip_pixels[i * 3 + 2] = blue;  // b
-    // }
-    // // Flush RGB values to LEDs
-    // ESP_ERROR_CHECK(rmt_transmit(led_chan, led_encoder, led_strip_pixels, sizeof(led_strip_pixels), &tx_config));
-    // ESP_ERROR_CHECK(rmt_tx_wait_all_done(led_chan, portMAX_DELAY));
 
     ESP_ERROR_CHECK(example_connect());
 
