@@ -1,0 +1,109 @@
+<!--
+    设备配置文件格式说明：
+    - <script type="application/json" class="device-config"> 中定义设备在画布上的元数据
+    - <body> 中的其他 HTML 为控制面板内容
+    - 可以包含 <script> 标签实现设备专属的交互逻辑
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+    <!-- 设备配置（JSON格式，定义该设备在画布上的属性） -->
+    <script type="application/json" class="device-config">
+{
+    "id": "ESP-32S3-01",
+    "name": "TEST3",
+    "type": "MCU Hub",
+    "address": "192.168.1.101",
+    "rssi": "-52 dBm",
+    "radius": 4.5,
+    "baseAlpha": 0.9,
+    "status": "offline"
+}
+</script>
+
+    <!-- 以下是控制面板内容 -->
+    <div class="space-y-3">
+        <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">硬件参数与地址</h3>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5">
+                <span class="block text-xs text-zinc-500 mb-1.5">物理地址 (MAC/IP)</span>
+                <span class="text-sm font-medium text-zinc-200 mono">192.168.1.101</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5">
+                <span class="block text-xs text-zinc-500 mb-1.5">信号强度 (RSSI)</span>
+                <span class="text-sm font-medium text-zinc-200 mono">-52 dBm</span>
+            </div>
+            <!-- <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5">
+            <span class="block text-xs text-zinc-500 mb-1.5">芯片型号</span>
+            <span class="text-sm font-medium text-zinc-200 mono">ESP32-S3</span>
+        </div>
+        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5">
+            <span class="block text-xs text-zinc-500 mb-1.5">固件版本</span>
+            <span class="text-sm font-medium text-zinc-200 mono">v3.2.1-beta</span>
+        </div> -->
+        </div>
+    </div>
+
+    <div class="space-y-3">
+        <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">控制中心</h3>
+        <div class="p-5 rounded-xl bg-white/[0.03] border border-white/5 space-y-4">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-zinc-300">节点运行状态</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked class="sr-only peer"
+                        onchange="handleDeviceToggle(this, 'ESP-32S3-01')">
+                    <div
+                        class="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-white peer-checked:text-black">
+                    </div>
+                </label>
+            </div>
+            <div class="space-y-2 pt-3 border-t border-white/8">
+                <div class="flex justify-between text-xs text-zinc-400">
+                    <span>PWM 输出功率</span>
+                    <span class="mono text-zinc-200 font-medium" id="sliderVal-ESP-32S3-01">85%</span>
+                </div>
+                <input type="range" min="0" max="100" value="85"
+                    class="w-full accent-white bg-white/15 rounded-lg appearance-none h-1.5 cursor-pointer"
+                    oninput="document.getElementById('sliderVal-ESP-32S3-01').innerText = this.value + '%'">
+            </div>
+            <div class="space-y-2 pt-3 border-t border-white/8">
+                <div class="flex justify-between text-xs text-zinc-400">
+                    <span>时钟频率</span>
+                    <span class="mono text-zinc-200 font-medium" id="freqVal-ESP-32S3-01">240MHz</span>
+                </div>
+                <input type="range" min="80" max="240" value="240" step="10"
+                    class="w-full accent-white bg-white/15 rounded-lg appearance-none h-1.5 cursor-pointer"
+                    oninput="document.getElementById('freqVal-ESP-32S3-01').innerText = this.value + 'MHz'">
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-3">
+        <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">遥测日志流</h3>
+        <div class="p-4 rounded-xl bg-black/60 border border-white/5 font-mono text-xs text-zinc-400 space-y-2"
+            id="logContainer-ESP-32S3-01">
+            <p class="text-emerald-400/95">[SYSTEM] Matrix Core 节点连接稳定，握手成功。</p>
+            <p class="text-zinc-500">[TELEMETRY] 核心温度: 42.1°C / 负载: 12.8%</p>
+            <p class="text-zinc-500">[PACKET] 收到来自总线的矩阵同步帧。</p>
+        </div>
+    </div>
+
+    <!-- 设备专属脚本 -->
+    <script>
+        // 这个函数由 index.html 中的全局作用域提供
+        // 如果需要在设备加载时执行初始化逻辑，可以写在这里
+        console.log('Matrix Core 控制器面板已加载');
+
+        // 可以添加设备专属的定时器、事件监听等
+        // 注意：面板关闭后这些逻辑需要自行清理（通过 closePanel 事件）
+    </script>
+
+</body>
+
+</html>
