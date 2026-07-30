@@ -271,15 +271,43 @@
         // ========== 面板内容缓存 ==========
         const panelContentCache = {};
 
+        // ========== 加载核心节点（root.html）配置 ==========
+        async function loadCoreDevice(path) {
+            try {
+                const html = await (await fetch(path)).text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const configScript = doc.querySelector('script[type="application/json"].device-config');
+
+                if (configScript) {
+                    const config = JSON.parse(configScript.textContent);
+                    coreNode.name = config.name || coreNode.name;
+                    coreNode.type = config.type || coreNode.type;
+                    coreNode.address = config.address || coreNode.address;
+                    coreNode.rssi = config.rssi || coreNode.rssi;
+                    coreNode.status = config.status || coreNode.status;
+                    coreNode.panelOffsetX = config.panelOffsetX !== undefined ? config.panelOffsetX : 35;
+                    coreNode.panelOffsetY = config.panelOffsetY !== undefined ? config.panelOffsetY : 0;
+                }
+
+                panelContentCache[path] = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
+                coreNode.panelFile = path;
+            } catch (err) {
+                console.warn('加载核心节点配置失败:', err);
+            }
+        }
+
         // ========== 从 devices/ 加载设备配置 ==========
-        async function loadExternalDevices() {
+        async function loadDevices() {
             try {
                 const response = await fetch('devices.json');
                 const devicePaths = await response.json();
 
-                // 过滤掉 root.html（核心节点已在 coreNode 中定义）
+                // root.html 对应核心节点，单独处理；其余为外部设备
+                const rootPath = devicePaths.find(path => path.includes('root.html'));
                 const externalPaths = devicePaths.filter(path => !path.includes('root.html'));
                 const totalDevices = externalPaths.length;
+
+                if (rootPath) await loadCoreDevice(rootPath);
 
                 // 预生成不重叠的坐标池（基于原始代码的分布模式）
                 const angleStep = (Math.PI * 2) / Math.max(totalDevices, 1);
@@ -336,10 +364,6 @@
                 const loadedDevices = await Promise.all(loadPromises);
                 externalDevices = loadedDevices.filter(d => d !== null);
 
-                // 核心节点已经在 nodes 数组中，不需要重复添加
-                // 但需要确保 coreNode 的 panelFile 指向 root.html
-                coreNode.panelFile = 'devices/root.html';
-
                 nodes = [coreNode, ...externalDevices];
 
                 document.getElementById('nodeCount').innerText = externalDevices.length;
@@ -351,36 +375,29 @@
             }
         }
         // ========== 加载面板内容到控制面板 ==========
-        function loadPanelContent(devicePath) {
+        async function loadPanelContent(devicePath) {
             const contentArea = document.getElementById('panelContentArea');
 
             if (panelContentCache[devicePath]) {
                 contentArea.innerHTML = panelContentCache[devicePath];
                 executePanelScripts(contentArea);
-                // 内容加载后重新定位面板
-                requestAnimationFrame(() => repositionPanel());
-            } else {
-                fetch(devicePath)
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        return res.text();
-                    })
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        // 移除 body 中的 script 标签（保留内容）
-                        const panelContent = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
-                        panelContentCache[devicePath] = panelContent;
-                        contentArea.innerHTML = panelContent;
-                        executePanelScripts(contentArea);
-                        // 内容加载后重新定位面板
-                        requestAnimationFrame(() => repositionPanel());
-                    })
-                    .catch(err => {
-                        console.error('加载面板失败:', err);
-                        contentArea.innerHTML = `<div class="text-center text-zinc-500 py-10 text-sm mono">加载失败: ${err.message}</div>`;
-                        requestAnimationFrame(() => repositionPanel());
-                    });
+                return;
+            }
+
+            try {
+                const res = await fetch(devicePath);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const html = await res.text();
+
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                // 移除 body 中的 script 标签（保留内容）
+                const panelContent = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
+                panelContentCache[devicePath] = panelContent;
+                contentArea.innerHTML = panelContent;
+                executePanelScripts(contentArea);
+            } catch (err) {
+                console.error('加载面板失败:', err);
+                contentArea.innerHTML = `<div class="text-center text-zinc-500 py-10 text-sm mono">加载失败: ${err.message}</div>`;
             }
         }
 
@@ -458,26 +475,18 @@
                 // 降级方案：如果 panelFile 不存在，显示默认内容
                 const contentArea = document.getElementById('panelContentArea');
                 contentArea.innerHTML = `<div class="text-center text-zinc-500 py-10 text-sm mono">该设备暂无控制面板</div>`;
-                requestAnimationFrame(() => repositionPanel());
             }
         }
 
         // ========== 更新面板状态显示 ==========
         function updatePanelStatus(status) {
             const statusEl = document.getElementById('panelDeviceStatus');
-            const indicatorDot = statusEl.querySelector('span');
 
             if (status === 'online') {
                 statusEl.className = 'text-xs uppercase tracking-wider text-emerald-400 mono flex items-center font-medium';
-                if (indicatorDot) {
-                    indicatorDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 animate-pulse';
-                }
                 statusEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 animate-pulse"></span> ONLINE';
             } else if (status === 'offline') {
                 statusEl.className = 'text-xs uppercase tracking-wider text-red-400 mono flex items-center font-medium';
-                if (indicatorDot) {
-                    indicatorDot.className = 'w-1.5 h-1.5 rounded-full bg-red-400 mr-2';
-                }
                 statusEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400 mr-2"></span> OFFLINE';
             } else {
                 // 其他状态（如 maintenance、error 等）
@@ -823,37 +832,7 @@
         }
 
         async function init() {
-            // ===== 新增：加载 root.html 配置，更新核心节点属性 =====
-            try {
-                const rootResponse = await fetch('devices/root.html');
-                if (rootResponse.ok) {
-                    const rootHtml = await rootResponse.text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(rootHtml, 'text/html');
-                    const configScript = doc.querySelector('script[type="application/json"].device-config');
-                    if (configScript) {
-                        const config = JSON.parse(configScript.textContent);
-                        // 更新 coreNode 的关键属性
-                        coreNode.name = config.name || coreNode.name;
-                        coreNode.type = config.type || coreNode.type;
-                        coreNode.address = config.address || coreNode.address;
-                        coreNode.rssi = config.rssi || coreNode.rssi;
-                        coreNode.status = config.status || coreNode.status;
-                        coreNode.panelOffsetX = config.panelOffsetX || 35; // 默认35
-                        coreNode.panelOffsetY = config.panelOffsetY || 0;   // 默认0
-                        console.log('✅ 核心节点配置已更新:', coreNode.name);
-                    }
-                    // 缓存面板内容（供后续使用）
-                    const panelContent = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
-                    panelContentCache['devices/root.html'] = panelContent;
-                }
-            } catch (err) {
-                console.warn('加载核心节点配置失败:', err);
-            }
-            // ===== 新增结束 =====
-
-            // 原有的加载外部设备逻辑
-            await loadExternalDevices();
+            await loadDevices();
             requestAnimationFrame(animate);
         }
 
