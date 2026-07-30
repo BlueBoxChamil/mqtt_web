@@ -228,8 +228,9 @@
             rssi: '0 dBm',
             x: 0.50,
             y: 0.50,
-            radius: 10,
+            radius: 30,
             baseAlpha: 1.0,
+            fieldScale: 1,
             isCore: true,
             worldX: 0,
             worldY: 0,
@@ -246,7 +247,7 @@
         let nodes = [coreNode];   // 所有节点（核心 + 外部设备）
 
         // ========== 环境粒子 ==========
-        const ambientParticles = Array.from({ length: 30 }, () => ({
+        const ambientParticles = Array.from({ length: 200 }, () => ({
             x: Math.random() * width,
             y: Math.random() * height,
             vx: (Math.random() - 0.5) * 0.08,
@@ -280,16 +281,27 @@
 
                 if (configScript) {
                     const config = JSON.parse(configScript.textContent);
+                    coreNode.id = config.id || coreNode.id;
                     coreNode.name = config.name || coreNode.name;
                     coreNode.type = config.type || coreNode.type;
                     coreNode.address = config.address || coreNode.address;
                     coreNode.rssi = config.rssi || coreNode.rssi;
                     coreNode.status = config.status || coreNode.status;
+                    // 关键修复：此前 radius / baseAlpha 从未从设备配置中读取，
+                    // 导致 root.html 里无论怎么改 radius 都不会生效
+                    coreNode.radius = config.radius !== undefined ? config.radius : coreNode.radius;
+                    coreNode.baseAlpha = config.baseAlpha !== undefined ? config.baseAlpha : coreNode.baseAlpha;
                     coreNode.panelOffsetX = config.panelOffsetX !== undefined ? config.panelOffsetX : 35;
                     coreNode.panelOffsetY = config.panelOffsetY !== undefined ? config.panelOffsetY : 0;
+                    // 记录一个缩放系数：以默认核心半径 30 为基准，radius 越大，核心节点的整体光场/波纹范围也越大
+                    coreNode.fieldScale = coreNode.radius / 30;
                 }
 
-                panelContentCache[path] = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
+                // 修复：之前用正则把所有 <script> 都提前剥离掉了，导致 executePanelScripts
+                // 永远找不到脚本可执行（设备专属脚本形同虚设）。这里只移除已经解析过的
+                // device-config 脚本，其余脚本原样保留，交给 executePanelScripts 重新执行。
+                if (configScript) configScript.remove();
+                panelContentCache[path] = doc.body.innerHTML;
                 coreNode.panelFile = path;
             } catch (err) {
                 console.warn('加载核心节点配置失败:', err);
@@ -330,6 +342,11 @@
 
                         const deviceConfig = JSON.parse(configScript.textContent);
 
+                        // 兜底：若设备配置未提供 radius / baseAlpha，给一个合理默认值，
+                        // 避免后续渲染出现 NaN 或节点完全不可见
+                        if (deviceConfig.radius === undefined) deviceConfig.radius = 12;
+                        if (deviceConfig.baseAlpha === undefined) deviceConfig.baseAlpha = 0.9;
+
                         // 如果设备配置中没有坐标，自动生成
                         if (deviceConfig.x === undefined || deviceConfig.y === undefined) {
                             const angle = index * angleStep + (Math.random() - 0.5) * 0.4;
@@ -350,8 +367,10 @@
                         deviceConfig.panelOffsetX = deviceConfig.panelOffsetX || 35;
                         deviceConfig.panelOffsetY = deviceConfig.panelOffsetY || 0;
 
-                        // 缓存面板 HTML 内容
-                        const panelContent = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
+                        // 缓存面板 HTML 内容（只去掉已解析的 device-config 脚本，
+                        // 保留设备专属 <script>，交给 executePanelScripts 执行）
+                        configScript.remove();
+                        const panelContent = doc.body.innerHTML;
                         panelContentCache[path] = panelContent;
 
                         return deviceConfig;
@@ -390,8 +409,11 @@
                 const html = await res.text();
 
                 const doc = new DOMParser().parseFromString(html, 'text/html');
-                // 移除 body 中的 script 标签（保留内容）
-                const panelContent = doc.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '');
+                // 只移除 device-config 元数据脚本，其余脚本保留并交给
+                // executePanelScripts 重新执行（此前会被整体剥离，导致设备脚本失效）
+                const cfgEl = doc.querySelector('script[type="application/json"].device-config');
+                if (cfgEl) cfgEl.remove();
+                const panelContent = doc.body.innerHTML;
                 panelContentCache[devicePath] = panelContent;
                 contentArea.innerHTML = panelContent;
                 executePanelScripts(contentArea);
@@ -405,6 +427,9 @@
         function executePanelScripts(container) {
             const scripts = container.querySelectorAll('script');
             scripts.forEach(script => {
+                // 跳过非 JS 类型的脚本块（例如设备元数据 application/json），
+                // 避免把 JSON 内容当成 JS 执行而报错
+                if (script.type && script.type !== 'text/javascript' && script.type !== '') return;
                 const newScript = document.createElement('script');
                 if (script.src) {
                     newScript.src = script.src;
@@ -429,7 +454,11 @@
             for (let node of nodes) {
                 let dx = node.worldX - worldMouseX;
                 let dy = node.worldY - worldMouseY;
-                let hitRadius = node.isCore ? 120 : 35;
+                // 命中范围随 radius 配置联动，而不是写死一个固定值，
+                // 这样调大 radius 后节点的可点击范围也会相应变大
+                let hitRadius = node.isCore
+                    ? Math.max(120, (node.radius || 30) * 4)
+                    : Math.max(35, (node.radius || 12) * 3);
                 if (Math.sqrt(dx * dx + dy * dy) < hitRadius) {
                     found = node;
                     break;
@@ -680,6 +709,7 @@
                 node.breathPhase += node.breathSpeed;
                 let pulse = Math.sin(node.breathPhase);
 
+
                 let currentRadius = (node.radius + pulse * (node.isCore ? 1.8 : 0.8)) * camera.zoom;
 
                 let alpha = node.baseAlpha;
@@ -697,13 +727,17 @@
                     ctx.translate(sx, sy);
 
                     let screenSize = Math.min(width, height);
-                    let maxCoreField = (screenSize * 0.45) * camera.zoom;
+                    // fieldScale 由 radius / 30(默认值) 得出，radius 越大，核心节点的波纹/光场范围越大，
+                    // 这样 root.html 里调整 radius 才会有明显的整体视觉变化，而不只是中心那个小圆点变化
+                    let fieldScale = node.fieldScale || 1;
+                    fieldScale = Math.max(0.4, Math.min(fieldScale, 3.5)); // 限制范围，避免过大或过小导致画面失控
+                    let maxCoreField = (screenSize * 0.45) * camera.zoom * fieldScale;
 
                     for (let i = 0; i < 4; i++) {
                         let waveRadius = (45 * camera.zoom) + ((radarWavePhase * 18 + i * 110) % (maxCoreField - 45 * camera.zoom));
                         let waveAlpha = Math.max(0, (1 - waveRadius / maxCoreField) * 0.22);
                         ctx.strokeStyle = `rgba(255, 255, 255, ${waveAlpha})`;
-                        ctx.lineWidth = 0.8;
+                        ctx.lineWidth = 1.6;
                         ctx.beginPath();
                         ctx.arc(0, 0, waveRadius, 0, Math.PI * 2);
                         ctx.stroke();
@@ -712,8 +746,8 @@
                     ctx.save();
                     ctx.rotate(rotationAngle);
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([8, 12]);
+                    ctx.lineWidth = 12;
+                    ctx.setLineDash([2, 22]);
                     ctx.beginPath();
                     ctx.arc(0, 0, maxCoreField * 0.65, 0, Math.PI * 2);
                     ctx.stroke();
@@ -727,8 +761,8 @@
                     const tickRadius = maxCoreField * 0.52;
                     for (let i = 0; i < tickCount; i++) {
                         let angle = (i / tickCount) * Math.PI * 2;
-                        let x1 = Math.cos(angle) * (tickRadius - 6);
-                        let y1 = Math.sin(angle) * (tickRadius - 6);
+                        let x1 = Math.cos(angle) * (tickRadius - 46);
+                        let y1 = Math.sin(angle) * (tickRadius - 46);
                         let x2 = Math.cos(angle) * tickRadius;
                         let y2 = Math.sin(angle) * tickRadius;
                         ctx.beginPath();
@@ -772,7 +806,9 @@
                     ctx.arc(sx, sy, 120 * camera.zoom, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (!node.isCore) {
-                    let glowRadius = isHovered ? 45 * camera.zoom : (22 + pulse * 4) * camera.zoom;
+                    // 光晕基础尺寸现在跟随 node.radius 联动，radius 越大，静止/悬停时的光晕也越大
+                    const baseGlow = (node.radius || 12) * 1.6;
+                    let glowRadius = isHovered ? Math.max(45, baseGlow * 1.8) * camera.zoom : (baseGlow + pulse * 4) * camera.zoom;
                     let glowAlpha = isHovered ? 0.15 : 0.04 + pulse * 0.015;
 
                     let glowGradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius);
@@ -784,11 +820,16 @@
                     ctx.fill();
                 }
 
-                // 节点圆点
-                ctx.fillStyle = node === focusedNode ? '#ffffff' : `rgba(230, 230, 240, ${alpha})`;
+                // 节点圆点 ：描边圆（空心）
+                const strokeColor = node === focusedNode ? '#ffffff' : `rgba(230, 230, 240, ${alpha})`;
+                const lineWidth = node === focusedNode ? 2 : 4;  // 聚焦时描边更粗
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = lineWidth;
                 ctx.beginPath();
-                ctx.arc(sx, sy, Math.max(2, currentRadius), 0, Math.PI * 2);
+                ctx.arc(sx, sy, Math.max(3, currentRadius), 0, Math.PI * 2); // 保证最小半径避免太小
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.05})`;  // 微弱的内部填充
                 ctx.fill();
+                ctx.stroke();
 
                 // 节点标签
                 if (node.isCore) {
@@ -796,12 +837,15 @@
                     ctx.textBaseline = 'bottom';
                     ctx.font = '600 14px Inter, sans-serif';
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-                    ctx.fillText(node.name, sx, sy - (44 * camera.zoom));
+                    // 竖直方向的标签间距同样要跟随实际圆圈半径(currentRadius)动态放大，
+                    // 否则 radius 调大后名字/地址会被描边圆压住
+                    const coreLabelGap = Math.max(44 * camera.zoom, node.radius + 26 * camera.zoom);
+                    ctx.fillText(node.name, sx, sy - coreLabelGap);
 
                     ctx.textBaseline = 'top';
                     ctx.font = '500 11px JetBrains Mono, monospace';
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-                    ctx.fillText('ROOT // 192.168.1.1', sx, sy + (42 * camera.zoom));
+                    ctx.fillText('ROOT // 192.168.1.1', sx, sy + (coreLabelGap - 2 * camera.zoom));
                 } else {
                     let textAlpha = alpha;
                     if (isHovered && node !== focusedNode) textAlpha = 1.0;
@@ -810,17 +854,21 @@
                     ctx.fillStyle = (node === focusedNode || isHovered) ? 'rgba(255, 255, 255, 0.95)' : `rgba(255, 255, 255, ${textAlpha * 0.8})`;
 
                     ctx.textBaseline = 'middle';
+                    // 修复：偏移量此前写死为 22px，当节点 radius 较大或呼吸动画放大时，
+                    // 圆圈描边会超出 22px 范围，把名字的开头一部分盖住。
+                    // 现在以 currentRadius（已包含 zoom 缩放）为基准再加一段安全间距。
+                    const labelGap = Math.max(22, currentRadius + 12 * camera.zoom);
                     if (node === focusedNode) {
                         if (activePanelIsOnRight) {
                             ctx.textAlign = 'right';
-                            ctx.fillText(node.name, sx - 22, sy);
+                            ctx.fillText(node.name, sx - labelGap, sy);
                         } else {
                             ctx.textAlign = 'left';
-                            ctx.fillText(node.name, sx + 22, sy);
+                            ctx.fillText(node.name, sx + labelGap, sy);
                         }
                     } else {
                         ctx.textAlign = 'left';
-                        ctx.fillText(node.name, sx + 22, sy);
+                        ctx.fillText(node.name, sx + labelGap, sy);
                     }
                 }
 
