@@ -151,7 +151,7 @@
 
     <!-- 动态控制面板 -->
     <aside id="controlPanel"
-        class="absolute w-[440px] rounded-2xl z-30 flex flex-col justify-between opacity-0 pointer-events-none scale-95 translate-y-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl">
+        class="absolute w-[540px] rounded-2xl z-30 flex flex-col justify-between opacity-0 pointer-events-none scale-95 translate-y-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl">
         <div class="p-6 border-b border-white/10 flex items-start justify-between">
             <div>
                 <div class="flex items-center space-x-2 mb-2">
@@ -174,7 +174,7 @@
         </div>
 
         <!-- 面板内容区域：这里会被动态加载的内容替换 -->
-        <div id="panelContentArea" class="p-6 max-h-[60vh] overflow-y-auto no-scrollbar space-y-7">
+        <div id="panelContentArea" class="p-6 max-h-[70vh] overflow-y-auto no-scrollbar space-y-7">
             <!-- 默认加载中状态，实际会被子设备HTML替换 -->
             <div class="text-center text-zinc-500 py-10 text-sm mono">加载中...</div>
         </div>
@@ -245,6 +245,24 @@
         // ========== 动态设备节点数组 ==========
         let externalDevices = [];  // 存储从 devices/ 加载的设备配置
         let nodes = [coreNode];   // 所有节点（核心 + 外部设备）
+
+        //添加服务器ip
+        const BASE_URL = 'http://192.168.164.128:8080';  // 改成你的服务器地址
+        const DEVICE_ID = 1;  // 需要轮询的设备ID
+
+        // ---------- WebSocket 与轮询控制 ----------
+        let ws = null;
+        let wsReconnectTimer = null;
+        let pollTimer = null;
+        let wsReconnectDelay = 2000;        // 初始重连延迟（ms）
+        const POLL_INTERVAL = 10000;        // 轮询间隔
+
+        // 添加共享数据，使用中心事件总线
+        const bus = new EventTarget();
+        window.dataBus = bus;
+
+        let commandPending = false;
+
 
         // ========== 环境粒子 ==========
         const ambientParticles = Array.from({ length: 200 }, () => ({
@@ -541,6 +559,197 @@
             focusedNode = null;
         }
 
+        // ========== 设备状态轮询（仅解析，不更新UI） ==========
+        async function fetchDeviceStatus(deviceId = DEVICE_ID) {
+            try {
+                const url = `${BASE_URL}/api/device/${deviceId}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                console.log('[Poll] 设备状态:', data);
+                // 在这里可以解析 data，存储到变量或触发其他逻辑，但不更新UI
+                // 例如：检测在线状态变化、记录数据等
+                // 如果需要使用，可保存到全局变量，如 window._lastDeviceData = data;
+            } catch (err) {
+                console.error('[Poll] 获取设备状态失败:', err);
+            }
+        }
+
+
+        // ========== 轮询控制 ==========
+        function startPolling() {
+            if (pollTimer) return;                 // 已有轮询则不再重复创建
+            console.log('[Poll] 开始轮询');
+            fetchDeviceStatus();                   // 立即执行一次
+            pollTimer = setInterval(fetchDeviceStatus, POLL_INTERVAL);
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                console.log('[Poll] 停止轮询');
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        // ========== WebSocket 实时连接 ==========
+        function wsUrl() {
+            // 从 BASE_URL 派生 ws 地址（替换协议）
+            return BASE_URL.replace(/^http/, 'ws') + '/ws';
+        }
+
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(wsUrl());
+            } catch (e) {
+                console.error('[WS] 连接创建失败:', e.message);
+                scheduleReconnect();
+                return;
+            }
+
+            ws.onopen = () => {
+                console.log('[WS] 已连接');
+                wsReconnectDelay = 2000;           // 重置重连延迟
+                stopPolling();                     // 连接成功，停止轮询
+                // 可选：立即拉取一次最新状态（避免等待推送）
+                fetchDeviceStatus();
+            };
+
+            ws.onmessage = (ev) => {
+                console.log('[WS] 收到消息:', ev.data);
+                let data;
+                try {
+                    data = JSON.parse(ev.data);
+                } catch (e) {
+                    // 非 JSON 消息（如纯文本）忽略
+                    return;
+                }
+
+                // 处理在线状态通知（只有 online 字段）
+                if (data.online !== undefined && data.light === undefined) {
+                    // 可保存在线状态，例如 window._deviceOnline = data.online === 1;
+                    // 此处仅打印，不更新 UI
+                    console.log('[WS] 在线状态更新:', data.online === 1 ? '在线' : '离线');
+                    return;
+                }
+
+                // 处理完整状态或信息推送
+                if (data.mac !== undefined || data.capabilities !== undefined) {
+                    // 设备信息推送（如 capabilities），可解析并存储
+                    console.log('[WS] 设备信息:', data);
+                    // 如需处理 capabilities，可参考原 openai_style 的逻辑
+                    return;
+                }
+
+                // 状态推送（包含 light / mode / brightness 等）
+                console.log('[WS] 设备状态更新:', data);
+                window.sharedData.MyReceiveData = data;
+                // 可存储到全局变量供其他逻辑使用，例如 window._lastState = data;
+                // 但不更新 UI
+            };
+
+            ws.onerror = (err) => {
+                console.error('[WS] 连接错误:', err);
+            };
+
+            ws.onclose = () => {
+                console.log('[WS] 断开连接');
+                ws = null;
+                // 恢复轮询（如果尚未启动）
+                startPolling();
+                // 安排重连
+                scheduleReconnect();
+            };
+        }
+
+        function scheduleReconnect() {
+            if (wsReconnectTimer) return;
+            wsReconnectTimer = setTimeout(() => {
+                wsReconnectTimer = null;
+                console.log('[WS] 尝试重连...');
+                connectWebSocket();
+            }, wsReconnectDelay);
+            // 指数退避，最大 15 秒
+            wsReconnectDelay = Math.min(wsReconnectDelay * 2, 15000);
+        }
+
+        //共享数据部分
+        function createReactive(target, bus) {
+            return new Proxy(target, {
+                set(obj, prop, value) {
+                    obj[prop] = value;
+                    // 统一触发 属性名+Changed 事件
+                    bus.dispatchEvent(new CustomEvent(prop + 'Changed', {
+                        detail: { [prop]: value }
+                    }));
+                    return true;
+                }
+            });
+        }
+
+        // 定义槽位
+        window.sharedData = createReactive({
+            MyReceiveData: null, // 接收到的数据
+            MySendData: null, // 发送的数据
+        }, bus);
+
+        // 监听通用事件
+        bus.addEventListener('MyReceiveDataChanged', (e) => {
+            console.log('主页面收到的数据:', e.detail.MyReceiveData);
+        });
+
+        // 监听共享数据事件
+        bus.addEventListener('MySendDataChanged', (e) => {
+            // 更新收到的ws数据
+            console.log('主页面收到其他页面的发送数据:', e.detail.MySendData);
+            sendCommand(DEVICE_ID, e.detail.MySendData);
+        });
+
+
+        // ---------- 发送控制指令 ----------
+        async function sendCommand(deviceId, partialState) {
+            if (commandPending) {
+                console.warn('[CMD] 上一条指令尚未完成，请稍后');
+                return;
+            }
+            if (!deviceId) {
+                console.error('[CMD] 无效的设备ID');
+                return;
+            }
+
+            commandPending = true;
+            try {
+                // 构造完整 payload：这里假设你需要把现有状态合并进去，但简化起见可直接发送 partialState
+                // 如果你的设备要求发送完整状态（包含 light, mode 等全部字段），可以维护一个全局状态对象
+                const payload = { ...partialState };   // 也可以从缓存中读取当前状态再合并
+                const url = `${BASE_URL}/api/device/${deviceId}/cmd`;
+                const body = JSON.stringify(payload);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body
+                });
+                const text = await response.text();
+                console.log(`[CMD] POST ${url} -> ${response.status} ${text}`);
+                console.log(`[CMD] BODY ${body}`);
+
+                if (!response.ok) {
+                    // 可在此处触发回退逻辑（例如从缓存中恢复）
+                    console.warn('[CMD] 指令未成功，设备可能保持原状态');
+                } else {
+                    // 指令成功，可以立即拉取一次最新状态（若WS未连接）
+                    if (!ws || ws.readyState !== WebSocket.OPEN) {
+                        fetchDeviceStatus(deviceId);
+                    }
+                    // 如果 WS 在线，会收到推送，无需额外操作
+                }
+            } catch (err) {
+                console.error('[CMD] 发送指令异常:', err);
+            } finally {
+                commandPending = false;
+            }
+        }
+
         // ========== 全局辅助函数（供子设备面板调用） ==========
         function handleDeviceToggle(checkbox, deviceId) {
             console.log(`设备 ${deviceId} 状态切换: ${checkbox.checked ? '开启' : '关闭'}`);
@@ -637,7 +846,7 @@
             // 控制面板定位
             if (focusedNode) {
                 const panel = document.getElementById('controlPanel');
-                const panelWidth = 440;
+                const panelWidth = 540;
                 // 从节点配置读取偏移量，如果没有则使用默认值
                 const gap = focusedNode.panelOffsetX !== undefined ? focusedNode.panelOffsetX : 35;
                 const verticalOffset = focusedNode.panelOffsetY !== undefined ? focusedNode.panelOffsetY : 0;
@@ -882,6 +1091,11 @@
         async function init() {
             await loadDevices();
             requestAnimationFrame(animate);
+
+            // 启动轮询（作为初始和后备）
+            startPolling();
+            // 连接 WebSocket
+            connectWebSocket();
         }
 
         init();

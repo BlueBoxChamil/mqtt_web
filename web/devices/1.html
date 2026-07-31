@@ -1,7 +1,7 @@
 <!--
  * @Author: BlueboxChamil
  * @Date: 2026-07-30 11:47:04
- * @LastEditTime: 2026-07-30 21:15:58
+ * @LastEditTime: 2026-07-31 17:31:54
  * @FilePath: \web\devices\1.html
  * @Description: 
  * Copyright (c) 2026 by BlueboxChamil, All Rights Reserved. 
@@ -21,21 +21,320 @@
 
 <body>
 
+    <!-- ===== 样式已移入 body 开头，确保被加载 ===== -->
+    <style>
+        /* ===== 灯光控制 UI 样式（复刻 openai_style，背景透明） ===== */
+        .light-control-panel {
+            --lp-text-main: #f0f0f2;
+            --lp-text-muted: #d4d4d8;
+            --lp-text-dim: #a1a1aa;
+            --lp-card-border: rgba(255, 255, 255, 0.10);
+            --lp-row-bg: rgba(255, 255, 255, 0.04);
+            --lp-row-border: rgba(255, 255, 255, 0.07);
+            --lp-input-bg: rgba(0, 0, 0, 0.5);
+            --lp-radius-sm: 8px;
+
+            /* 背景透明，只保留边框和阴影 */
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 1px solid var(--lp-card-border);
+            border-radius: 16px;
+            padding: 24px 24px 20px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--lp-text-main);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* ---- toggle 行 ---- */
+        .light-control-panel .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0 0;
+        }
+
+        .light-control-panel .toggle-label-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .light-control-panel .toggle-label {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--lp-text-main);
+        }
+
+        .light-control-panel .toggle-sublabel {
+            font-size: 13px;
+            color: var(--lp-text-dim);
+            font-weight: 450;
+        }
+
+        .light-control-panel .toggle-track {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 999px;
+            cursor: default;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .light-control-panel .toggle-track.checked {
+            background: #ffffff;
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+        }
+
+        .light-control-panel .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.2s ease;
+        }
+
+        .light-control-panel .toggle-track.checked .toggle-thumb {
+            transform: translateX(22px);
+            background: #0a0a0c;
+        }
+
+        /* ---- pending 状态（转圈圈） ---- */
+        .light-control-panel .toggle-track.pending {
+            cursor: default;
+            pointer-events: none;
+            animation: togglePulse 1s ease-in-out infinite;
+        }
+
+        @keyframes togglePulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* ---- 灯泡 ---- */
+        .light-control-panel .bulb-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 16px 0 10px;
+            padding: 20px 0 8px;
+        }
+
+        .light-control-panel .bulb-glow {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: radial-gradient(circle, rgba(255, 157, 0, 0.18), transparent 55%);
+            filter: blur(50px);
+            pointer-events: none;
+            transform: scale(0.9);
+            animation: rgbGlowBreathe 6s infinite alternate;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 1;
+        }
+
+        .light-control-panel .bulb-glow.light-off {
+            opacity: 0;
+            animation: none;
+            transform: scale(0.85);
+        }
+
+        @keyframes rgbGlowBreathe {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .light-control-panel .color-swatch {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #ff9d00;
+            box-shadow: 0 0 80px rgba(255, 157, 0, 0.5);
+            transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: scale(1);
+            opacity: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .light-control-panel .color-swatch.light-off {
+            transform: scale(0.1);
+            opacity: 0;
+            filter: brightness(0.2);
+            pointer-events: none;
+        }
+
+        .light-control-panel .color-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .light-control-panel .color-info-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--lp-text-muted);
+        }
+
+        .light-control-panel .color-info-hex {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 12.5px;
+            color: var(--lp-text-dim);
+            letter-spacing: 0.3px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ---- 控制控件（HSL RGB 模式） ---- */
+        .light-control-panel .controls-wrap {
+            display: block;
+            margin-top: 18px;
+            opacity: 1;
+        }
+
+        .light-control-panel .controls-wrap.disabled {
+            opacity: 0.30;
+            pointer-events: none;
+        }
+
+        .light-control-panel .controls-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 6px 4px 4px 4px;
+        }
+
+        .light-control-panel .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .light-control-panel .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--lp-text-muted);
+        }
+
+        .light-control-panel .control-val {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 12px;
+            color: var(--lp-text-dim);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .light-control-panel .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .light-control-panel .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        .light-control-panel .slider-white {
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        /* ---- 响应式微调 ---- */
+        @media (max-width: 420px) {
+            .light-control-panel .color-swatch {
+                width: 90px;
+                height: 90px;
+            }
+
+            .light-control-panel .toggle-label {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .light-control-panel .color-swatch {
+                width: 72px;
+                height: 72px;
+            }
+        }
+    </style>
+
     <!-- 设备配置（JSON格式，定义该设备在画布上的属性） -->
     <script type="application/json" class="device-config">
-{
-    "id": "ESP-32S3-01",
-    "name": "Matrix Core 核心控制器",
-    "type": "MCU Hub",
-    "address": "192.168.1.101",
-    "rssi": "-52 dBm",
-    "radius": 8.5,
-    "baseAlpha": 0.9,
-    "status": "offline",
-    "panelOffsetX": 120,
-    "panelOffsetY": 40
-}
-</script>
+        {
+            "id": "ESP-32S3-01",
+            "name": "Matrix Core 核心控制器",
+            "type": "MCU Hub",
+            "address": "192.168.1.101",
+            "rssi": "-52 dBm",
+            "radius": 8.5,
+            "baseAlpha": 0.9,
+            "status": "offline",
+            "panelOffsetX": 120,
+            "panelOffsetY": 40
+        }
+    </script>
 
     <!-- 以下是控制面板内容 -->
     <div class="space-y-3">
@@ -49,50 +348,73 @@
                 <span class="block text-xs text-zinc-500 mb-1.5">信号强度 (RSSI)</span>
                 <span class="text-sm font-medium text-zinc-200 mono">-52 dBm</span>
             </div>
-            <!-- <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5">
-            <span class="block text-xs text-zinc-500 mb-1.5">芯片型号</span>
-            <span class="text-sm font-medium text-zinc-200 mono">ESP32-S3</span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5">
-            <span class="block text-xs text-zinc-500 mb-1.5">固件版本</span>
-            <span class="text-sm font-medium text-zinc-200 mono">v3.2.1-beta</span>
-        </div> -->
         </div>
     </div>
 
+    <!-- ===== 控制中心 — RGB 彩光模式（mode=2）UI ===== -->
     <div class="space-y-3">
         <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">控制中心</h3>
-        <div class="p-5 rounded-xl bg-white/[0.03] border border-white/5 space-y-4">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-zinc-300">节点运行状态</span>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked class="sr-only peer"
-                        onchange="handleDeviceToggle(this, 'ESP-32S3-01')">
-                    <div
-                        class="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-white peer-checked:text-black">
+        <div class="light-control-panel">
+
+            <!-- 灯光开关（默认开启） -->
+            <div class="toggle-row">
+                <div class="toggle-label-group">
+                    <span class="toggle-label">灯光开关</span>
+                    <span class="toggle-sublabel" id="toggleSublabel">已开启</span>
+                </div>
+                <div class="toggle-track checked" id="lightToggle" role="switch" aria-checked="true">
+                    <div class="toggle-thumb"></div>
+                </div>
+            </div>
+
+            <!-- 灯泡可视化（初始橙色） -->
+            <div class="bulb-wrapper">
+                <div class="bulb-glow" id="bulbGlow"></div>
+                <div class="color-swatch" id="rgbColorDot"
+                    style="background: #ff9d00; box-shadow: 0 0 80px rgba(255,157,0,0.5);"></div>
+                <div class="color-info">
+                    <span class="color-info-label">当前颜色</span>
+                    <span class="color-info-hex" id="rgbHexReadout">#FF9D00</span>
+                </div>
+            </div>
+
+            <!-- 控制控件（HSL 三个滑块） -->
+            <div class="controls-wrap" id="controlsWrap">
+                <div class="controls-inner">
+
+                    <!-- 色相 -->
+                    <div class="control-item">
+                        <div class="control-header">
+                            <span>色相 Hue</span>
+                            <span class="control-val" id="valHue">030°</span>
+                        </div>
+                        <input type="range" class="slider" id="sliderHue" min="0" max="360" value="30">
                     </div>
-                </label>
-            </div>
-            <div class="space-y-2 pt-3 border-t border-white/8">
-                <div class="flex justify-between text-xs text-zinc-400">
-                    <span>PWM 输出功率</span>
-                    <span class="mono text-zinc-200 font-medium" id="sliderVal-ESP-32S3-01">85%</span>
+
+                    <!-- 饱和度 -->
+                    <div class="control-item">
+                        <div class="control-header">
+                            <span>饱和度 Saturation</span>
+                            <span class="control-val" id="valSaturation">75%</span>
+                        </div>
+                        <input type="range" class="slider" id="sliderSaturation" min="0" max="100" value="75">
+                    </div>
+
+                    <!-- 明度 -->
+                    <div class="control-item">
+                        <div class="control-header">
+                            <span>明度 Lightness</span>
+                            <span class="control-val" id="valLightness">50%</span>
+                        </div>
+                        <input type="range" class="slider" id="sliderLightness" min="0" max="100" value="50">
+                    </div>
+
                 </div>
-                <input type="range" min="0" max="100" value="85"
-                    class="w-full accent-white bg-white/15 rounded-lg appearance-none h-1.5 cursor-pointer"
-                    oninput="document.getElementById('sliderVal-ESP-32S3-01').innerText = this.value + '%'">
             </div>
-            <div class="space-y-2 pt-3 border-t border-white/8">
-                <div class="flex justify-between text-xs text-zinc-400">
-                    <span>时钟频率</span>
-                    <span class="mono text-zinc-200 font-medium" id="freqVal-ESP-32S3-01">240MHz</span>
-                </div>
-                <input type="range" min="80" max="240" value="240" step="10"
-                    class="w-full accent-white bg-white/15 rounded-lg appearance-none h-1.5 cursor-pointer"
-                    oninput="document.getElementById('freqVal-ESP-32S3-01').innerText = this.value + 'MHz'">
-            </div>
+
         </div>
     </div>
+    <!-- ===== 控制中心结束 ===== -->
 
     <div class="space-y-3">
         <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">遥测日志流</h3>
@@ -104,14 +426,285 @@
         </div>
     </div>
 
-    <!-- 设备专属脚本 -->
+    <!-- ============================================================ -->
+    <!-- 设备专属脚本（开关转圈等待，滑块保持新值等待确认）            -->
+    <!-- ============================================================ -->
     <script>
-        // 这个函数由 index.html 中的全局作用域提供
-        // 如果需要在设备加载时执行初始化逻辑，可以写在这里
-        console.log('Matrix Core 控制器面板已加载');
+        (function () {
+            const bus = window.dataBus;
 
-        // 可以添加设备专属的定时器、事件监听等
-        // 注意：面板关闭后这些逻辑需要自行清理（通过 closePanel 事件）
+            // ---------- DOM 引用 ----------
+            const toggleTrack = document.getElementById('lightToggle');
+            const toggleSublabel = document.getElementById('toggleSublabel');
+            const dot = document.getElementById('rgbColorDot');
+            const hexReadout = document.getElementById('rgbHexReadout');
+            const glow = document.getElementById('bulbGlow');
+            const controlsWrap = document.getElementById('controlsWrap');
+
+            const sliderHue = document.getElementById('sliderHue');
+            const sliderSat = document.getElementById('sliderSaturation');
+            const sliderLight = document.getElementById('sliderLightness');
+            const valHue = document.getElementById('valHue');
+            const valSat = document.getElementById('valSaturation');
+            const valLight = document.getElementById('valLightness');
+
+            // ---------- 状态 ----------
+            let currentState = {
+                light: 1,
+                mode: 2,
+                h: 30,
+                s: 75,
+                l: 50,
+                brightness: 100,
+                white: 125
+            };
+
+            // 上次成功同步的状态（用于超时回退）
+            let lastSyncedState = { ...currentState };
+
+            // 开关等待标志
+            let togglePending = false;
+            let toggleTimer = null;
+
+            // 滑块等待标志（超时回退）
+            let sliderPending = false;
+            let sliderTimer = null;
+            // 保存滑块发送前的状态（用于超时回退）
+            let sliderRevertState = null;
+
+            // ---------- 工具函数 ----------
+            function hslToHex(h, s, l) {
+                s /= 100;
+                l /= 100;
+                const a = s * Math.min(l, 1 - l);
+                const f = n => {
+                    const k = (n + h / 30) % 12;
+                    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                    return Math.round(255 * color).toString(16).padStart(2, '0');
+                };
+                return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+            }
+
+            // ---------- UI 更新（完全基于 state） ----------
+            function updateUIFromState(state) {
+                const isOn = state.light === 1;
+                toggleTrack.classList.toggle('checked', isOn);
+                toggleTrack.setAttribute('aria-checked', String(isOn));
+                toggleSublabel.textContent = isOn ? '已开启' : '已关闭';
+
+                sliderHue.value = state.h;
+                sliderSat.value = state.s;
+                sliderLight.value = state.l;
+                valHue.textContent = String(state.h).padStart(3, '0') + '°';
+                valSat.textContent = state.s + '%';
+                valLight.textContent = state.l + '%';
+
+                const hex = hslToHex(state.h, state.s, state.l);
+                hexReadout.textContent = hex;
+                dot.style.backgroundColor = hex;
+                dot.style.boxShadow = `0 0 80px ${hex}80`;
+                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
+
+                dot.classList.toggle('light-off', !isOn);
+                glow.classList.toggle('light-off', !isOn);
+                controlsWrap.classList.toggle('disabled', !isOn);
+            }
+
+            // ---------- 发送数据 ----------
+            function sendState(state) {
+                if (window.sharedData) {
+                    window.sharedData.MySendData = state;
+                } else {
+                    console.warn('sharedData 不可用，无法发送状态');
+                }
+            }
+
+            // ---------- 开关控制 ----------
+            toggleTrack.addEventListener('click', function (e) {
+                if (togglePending) {
+                    console.log('⏳ 开关等待确认中，忽略本次点击');
+                    return;
+                }
+
+                // 保存当前状态用于回退
+                lastSyncedState = { ...currentState };
+                const newLight = currentState.light === 1 ? 0 : 1;
+
+                // 进入 pending（UI 不改变，只转圈）
+                togglePending = true;
+                this.classList.add('pending');
+                sendState({ light: newLight });
+
+                // 超时回退
+                if (toggleTimer) clearTimeout(toggleTimer);
+                toggleTimer = setTimeout(() => {
+                    if (togglePending) {
+                        togglePending = false;
+                        toggleTrack.classList.remove('pending');
+                        currentState = { ...lastSyncedState };
+                        updateUIFromState(currentState);
+                        console.warn('⏰ 开关超时，回退到之前状态');
+                    }
+                }, 5000);
+
+                console.log('📤 开关指令已发送（新状态:', newLight, '），等待确认...');
+            });
+
+            // ---------- 滑块控制 ----------
+            // 色相
+            sliderHue.addEventListener('input', function () {
+                // 乐观更新 UI 和 currentState
+                currentState.h = parseInt(this.value);
+                valHue.textContent = String(currentState.h).padStart(3, '0') + '°';
+                const hex = hslToHex(currentState.h, currentState.s, currentState.l);
+                hexReadout.textContent = hex;
+                dot.style.backgroundColor = hex;
+                dot.style.boxShadow = `0 0 80px ${hex}80`;
+                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
+            });
+
+            sliderHue.addEventListener('change', function () {
+                // 如果已经有滑块等待，先取消旧的超时
+                if (sliderPending) {
+                    clearTimeout(sliderTimer);
+                    sliderPending = false;
+                }
+                // 保存当前状态（用于超时回退）
+                sliderRevertState = { ...lastSyncedState };
+                // 发送当前完整状态
+                sendState(currentState);
+                // 标记等待
+                sliderPending = true;
+                sliderTimer = setTimeout(() => {
+                    if (sliderPending) {
+                        sliderPending = false;
+                        // 回退到发送前的状态
+                        currentState = { ...sliderRevertState };
+                        updateUIFromState(currentState);
+                        console.warn('⏰ 滑块超时，回退到之前状态');
+                    }
+                }, 5000);
+                console.log('📤 色相已发送:', currentState.h, '，等待确认...');
+            });
+
+            // 饱和度
+            sliderSat.addEventListener('input', function () {
+                currentState.s = parseInt(this.value);
+                valSat.textContent = currentState.s + '%';
+                const hex = hslToHex(currentState.h, currentState.s, currentState.l);
+                hexReadout.textContent = hex;
+                dot.style.backgroundColor = hex;
+                dot.style.boxShadow = `0 0 80px ${hex}80`;
+                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
+            });
+
+            sliderSat.addEventListener('change', function () {
+                if (sliderPending) {
+                    clearTimeout(sliderTimer);
+                    sliderPending = false;
+                }
+                sliderRevertState = { ...lastSyncedState };
+                sendState(currentState);
+                sliderPending = true;
+                sliderTimer = setTimeout(() => {
+                    if (sliderPending) {
+                        sliderPending = false;
+                        currentState = { ...sliderRevertState };
+                        updateUIFromState(currentState);
+                        console.warn('⏰ 滑块超时，回退到之前状态');
+                    }
+                }, 5000);
+                console.log('📤 饱和度已发送:', currentState.s, '，等待确认...');
+            });
+
+            // 明度
+            sliderLight.addEventListener('input', function () {
+                currentState.l = parseInt(this.value);
+                valLight.textContent = currentState.l + '%';
+                const hex = hslToHex(currentState.h, currentState.s, currentState.l);
+                hexReadout.textContent = hex;
+                dot.style.backgroundColor = hex;
+                dot.style.boxShadow = `0 0 80px ${hex}80`;
+                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
+            });
+
+            sliderLight.addEventListener('change', function () {
+                if (sliderPending) {
+                    clearTimeout(sliderTimer);
+                    sliderPending = false;
+                }
+                sliderRevertState = { ...lastSyncedState };
+                sendState(currentState);
+                sliderPending = true;
+                sliderTimer = setTimeout(() => {
+                    if (sliderPending) {
+                        sliderPending = false;
+                        currentState = { ...sliderRevertState };
+                        updateUIFromState(currentState);
+                        console.warn('⏰ 滑块超时，回退到之前状态');
+                    }
+                }, 5000);
+                console.log('📤 明度已发送:', currentState.l, '，等待确认...');
+            });
+
+            // ---------- 外部数据同步（MyReceiveDataChanged） ----------
+            if (bus) {
+                bus.addEventListener('MyReceiveDataChanged', function (e) {
+                    const data = e.detail.MyReceiveData;
+                    if (!data) return;
+
+                    // 更新状态
+                    if (data.light !== undefined) currentState.light = data.light;
+                    if (data.h !== undefined) currentState.h = data.h;
+                    if (data.s !== undefined) currentState.s = data.s;
+                    if (data.l !== undefined) currentState.l = data.l;
+                    if (data.mode !== undefined) currentState.mode = data.mode;
+
+                    // 更新 UI
+                    updateUIFromState(currentState);
+
+                    // 更新 lastSyncedState
+                    lastSyncedState = { ...currentState };
+
+                    // 如果开关在等待确认，解除 pending
+                    if (togglePending) {
+                        togglePending = false;
+                        toggleTrack.classList.remove('pending');
+                        if (toggleTimer) {
+                            clearTimeout(toggleTimer);
+                            toggleTimer = null;
+                        }
+                        console.log('✅ 外部确认已收到，开关 pending 解除');
+                    }
+
+                    // 如果滑块在等待确认，解除 pending
+                    if (sliderPending) {
+                        sliderPending = false;
+                        if (sliderTimer) {
+                            clearTimeout(sliderTimer);
+                            sliderTimer = null;
+                        }
+                        console.log('✅ 外部确认已收到，滑块 pending 解除');
+                    }
+
+                    console.log('📥 外部状态已同步:', currentState);
+                });
+            }
+
+            // ---------- 初始化 ----------
+            if (window.sharedData && window.sharedData.latestData) {
+                const init = window.sharedData.latestData;
+                if (init.light !== undefined) currentState.light = init.light;
+                if (init.h !== undefined) currentState.h = init.h;
+                if (init.s !== undefined) currentState.s = init.s;
+                if (init.l !== undefined) currentState.l = init.l;
+                if (init.mode !== undefined) currentState.mode = init.mode;
+                lastSyncedState = { ...currentState };
+            }
+
+            updateUIFromState(currentState);
+            console.log('✅ Matrix Core 控制器已启动（开关转圈等待，滑块保持新值等待确认）');
+        })();
     </script>
 
 </body>
