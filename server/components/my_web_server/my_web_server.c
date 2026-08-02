@@ -105,10 +105,24 @@ static void api_device_get(struct mg_connection *c, struct mg_str id)
     cJSON_AddStringToObject(root, "fw_version", device.fw_version);
     cJSON_AddStringToObject(root, "mac", device.mac);
     cJSON_AddNumberToObject(root, "online", device.online);
-    cJSON_AddStringToObject(root, "state", device.state);
+    // cJSON_AddStringToObject(root, "state", device.state);
     cJSON_AddStringToObject(root, "capabilities", device.capabilities);
 
+    // 将 state 字符串解析为 JSON 对象，然后添加到 root
+    cJSON *state_obj = NULL;
+    if (device.state[0] != '\0') {  // 非空字符串
+        state_obj = cJSON_Parse(device.state);
+    }
+    if (state_obj == NULL) {
+        // 解析失败或为空字符串，添加一个空对象（或 null）
+        state_obj = cJSON_CreateObject();  // 空对象 {}
+    }
+    // 将 state_obj 挂载到 root，root 会负责释放它
+    cJSON_AddItemToObject(root, "state", state_obj);
+
+
     char *json = cJSON_Print(root);
+    printf("json = %s\n", json);
     mg_http_reply(
         c,
         200,

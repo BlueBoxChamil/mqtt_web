@@ -8,48 +8,6 @@ static my_device_t devices[DEVICE_MAX_NUM];
 static my_device_t list[DEVICE_MAX_NUM];
 static device_state_callback_t state_callback = NULL;
 
-// 扫描所有设备,超时未上报的标记为离线
-static void my_device_manager_check_online(void)
-{
-    // 设备每 10s 发一次 state(哪怕没变化),判定为设备在线
-    time_t now = time(NULL);
-
-    for (uint32_t i = 0; i < DEVICE_MAX_NUM; i++)
-    {
-        if (devices[i].id == 0)
-            continue; // 这个槽位还没被用过,跳过
-
-        if (devices[i].online == 0)
-            continue; // 已经是离线状态,不用重复处理
-
-        if (now - devices[i].last_update > DEVICE_OFFLINE_TIMEOUT_SEC)
-        {
-            devices[i].online = 0;
-            printf("device %u offline (timeout)\n", devices[i].id);
-
-            // 可选:通知前端离线了
-            if (state_callback)
-            {
-                char msg[64];
-                snprintf(msg, sizeof(msg), "{\"id\":%u,\"online\":0}", devices[i].id);
-                state_callback(msg);
-            }
-        }
-    }
-}
-
-// 定时扫描线程
-static void *my_device_manager_check_task(void *arg)
-{
-    while (1)
-    {
-        // 服务器每 5s 扫描一次所有设备
-        sleep(DEVICE_CHECK_INTERVAL_SEC);
-        my_device_manager_check_online();
-    }
-    return NULL;
-}
-
 // 查找设备id，不存在则创建
 static my_device_t *my_device_manager_find(uint32_t id)
 {
@@ -93,8 +51,31 @@ static void my_devide_manager_state_update(const char *topic, const char *json)
     if (dev == NULL)
         return;
 
+    cJSON *root = cJSON_Parse(json);
+    if (root == NULL)
+        return;
+    cJSON *state = cJSON_GetObjectItem(root, "state");
+    if (state != NULL && cJSON_IsObject(state))
+    {
+        // 将整个 state 对象转为字符串（不带格式，节省空间）
+        char *state_str = cJSON_PrintUnformatted(state);
+        if (state_str != NULL)
+        {
+            // 复制到您的 dev->state 中（确保缓冲区足够大）
+            strncpy(dev->state, state_str, sizeof(dev->state) - 1);
+            dev->state[sizeof(dev->state) - 1] = '\0'; // 安全终止
+            printf("保存的 state: %s\n", dev->state);
+            // 记得释放 cJSON_PrintUnformatted 分配的内存
+            free(state_str);
+        }
+    }
+    else
+    {
+        printf("未找到 state 字段或类型不是对象\n");
+    }
+
     dev->online = 1;
-    strncpy(dev->state, json, sizeof(dev->state) - 1);
+    // strncpy(dev->state, json, sizeof(dev->state) - 1);
     dev->last_update = time(NULL);
 
     time_t now = time(NULL);
@@ -285,10 +266,6 @@ void my_device_manager_init(void)
 {
     memset(devices, 0, sizeof(devices));
     my_mqtt_register_callback(my_device_manager_update);
-
-    // pthread_t tid;
-    // pthread_create(&tid, NULL, my_device_manager_check_task, NULL);
-    // pthread_detach(tid);
 
     printf("device manager init\n");
 }

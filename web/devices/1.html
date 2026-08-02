@@ -1,7 +1,7 @@
 <!--
  * @Author: BlueboxChamil
  * @Date: 2026-07-30 11:47:04
- * @LastEditTime: 2026-07-31 17:31:54
+ * @LastEditTime: 2026-08-02 20:31:47
  * @FilePath: \web\devices\1.html
  * @Description: 
  * Copyright (c) 2026 by BlueboxChamil, All Rights Reserved. 
@@ -416,15 +416,423 @@
     </div>
     <!-- ===== 控制中心结束 ===== -->
 
+    <!-- ===== 通信日志面板（复刻 openai_style，默认折叠） ===== -->
     <div class="space-y-3">
-        <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">遥测日志流</h3>
-        <div class="p-4 rounded-xl bg-black/60 border border-white/5 font-mono text-xs text-zinc-400 space-y-2"
-            id="logContainer-ESP-32S3-01">
-            <p class="text-emerald-400/95">[SYSTEM] Matrix Core 节点连接稳定，握手成功。</p>
-            <p class="text-zinc-500">[TELEMETRY] 核心温度: 42.1°C / 负载: 12.8%</p>
-            <p class="text-zinc-500">[PACKET] 收到来自总线的矩阵同步帧。</p>
+        <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">通信日志</h3>
+
+        <style>
+            /* 日志面板样式（仅作用于当前容器内的 .log-panel） */
+            .log-panel {
+                --lp-text-dim: #a1a1aa;
+                --lp-text-muted: #d4d4d8;
+                --lp-text-main: #f0f0f2;
+                --lp-card-border: rgba(255, 255, 255, 0.08);
+                --lp-radius-md: 12px;
+                --lp-radius-sm: 8px;
+                background: rgba(14, 14, 18, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid var(--lp-card-border);
+                border-radius: var(--lp-radius-md);
+                overflow: hidden;
+                box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+                transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            .log-panel .log-header {
+                padding: 12px 16px;
+                background: rgba(255, 255, 255, 0.03);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                cursor: pointer;
+                user-select: none;
+                transition: background 0.2s ease;
+            }
+
+            .log-panel .log-header:hover {
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            .log-panel .log-title-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .log-panel .log-chevron {
+                width: 14px;
+                height: 14px;
+                color: var(--lp-text-dim);
+                transform: rotate(-90deg);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            .log-panel.open .log-chevron {
+                transform: rotate(0deg);
+            }
+
+            .log-panel .log-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--lp-text-muted);
+                letter-spacing: 0.2px;
+            }
+
+            .log-panel .log-count {
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--lp-text-dim);
+                background: rgba(255, 255, 255, 0.07);
+                padding: 1px 10px;
+                border-radius: 20px;
+                font-variant-numeric: tabular-nums;
+            }
+
+            .log-panel .log-actions {
+                display: flex;
+                gap: 4px;
+            }
+
+            .log-panel .btn-tool {
+                background: transparent;
+                border: none;
+                color: var(--lp-text-dim);
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                padding: 4px 12px;
+                border-radius: var(--lp-radius-sm);
+                font-family: 'Inter', sans-serif;
+                transition: all 0.2s ease;
+            }
+
+            .log-panel .btn-tool:hover {
+                color: var(--lp-text-main);
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            .log-panel .log-body {
+                display: grid;
+                grid-template-rows: 0fr;
+                transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            .log-panel.open .log-body {
+                grid-template-rows: 1fr;
+            }
+
+            .log-panel .log-body-inner {
+                overflow: hidden;
+            }
+
+            .log-panel .log-filter-bar {
+                display: flex;
+                gap: 4px;
+                padding: 8px 14px;
+                background: rgba(0, 0, 0, 0.25);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                flex-wrap: wrap;
+            }
+
+            .log-panel .filter-btn {
+                background: transparent;
+                border: none;
+                color: var(--lp-text-dim);
+                font-size: 11.5px;
+                font-weight: 500;
+                padding: 3px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: 'Inter', sans-serif;
+                transition: all 0.2s ease;
+            }
+
+            .log-panel .filter-btn:hover {
+                color: var(--lp-text-muted);
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .log-panel .filter-btn.active {
+                background: rgba(255, 255, 255, 0.12);
+                color: var(--lp-text-main);
+            }
+
+            .log-panel .log {
+                font-family: 'JetBrains Mono', 'Consolas', monospace;
+                font-size: 12.5px;
+                line-height: 1.7;
+                padding: 14px;
+                height: 200px;
+                overflow-y: auto;
+                color: var(--lp-text-main);
+            }
+
+            .log-panel .log-line {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                margin-bottom: 6px;
+                opacity: 0;
+                animation: fadeIn 0.2s forwards ease;
+            }
+
+            @keyframes fadeIn {
+                to {
+                    opacity: 1;
+                }
+            }
+
+            .log-panel .log-time {
+                color: #71717a;
+                font-size: 11px;
+                white-space: nowrap;
+                padding-top: 1px;
+                font-variant-numeric: tabular-nums;
+            }
+
+            .log-panel .badge {
+                font-size: 10px;
+                font-weight: 600;
+                padding: 1px 8px;
+                border-radius: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                flex-shrink: 0;
+                font-family: 'Inter', sans-serif;
+            }
+
+            .log-panel .badge-SEND {
+                background: rgba(168, 85, 247, 0.18);
+                color: #d8b4fe;
+                border: 1px solid rgba(216, 180, 254, 0.20);
+            }
+
+            .log-panel .badge-RECE {
+                background: rgba(59, 130, 246, 0.18);
+                color: #93c5fd;
+                border: 1px solid rgba(147, 197, 253, 0.20);
+            }
+
+            .log-panel .badge-INFO {
+                background: rgba(255, 255, 255, 0.08);
+                color: #d4d4d8;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .log-panel .log-data {
+                color: #67e8f9;
+                font-weight: 500;
+            }
+        </style>
+
+        <div class="log-panel" id="logPanel">
+            <div class="log-header" id="logHeader">
+                <div class="log-title-group">
+                    <svg class="log-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span class="log-title">控制台日志</span>
+                    <span class="log-count" id="logCount">0</span>
+                </div>
+                <div class="log-actions">
+                    <button class="btn-tool" id="btnCopyLog" type="button">复制</button>
+                    <button class="btn-tool" id="btnClearLog" type="button">清空</button>
+                </div>
+            </div>
+            <div class="log-body">
+                <div class="log-body-inner">
+                    <div class="log-filter-bar">
+                        <button class="filter-btn active" data-filter="ALL">全部</button>
+                        <button class="filter-btn" data-filter="SEND">SEND</button>
+                        <button class="filter-btn" data-filter="RECE">RECE</button>
+                    </div>
+                    <div class="log" id="log"></div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- 日志功能脚本 -->
+    <script>
+        (function () {
+            // ---------- 日志数据管理 ----------
+            const MAX_LOG_COUNT = 50;
+            let rawLogs = [];
+            let currentFilter = 'ALL';
+
+            const logEl = document.getElementById('log');
+            const logCountEl = document.getElementById('logCount');
+            const logPanel = document.getElementById('logPanel');
+            const logHeader = document.getElementById('logHeader');
+
+            // 默认折叠（去掉 open 类）
+            logPanel.classList.remove('open');
+
+            // ---------- 渲染日志 ----------
+            function renderLogs() {
+                logEl.innerHTML = '';
+                const filtered = rawLogs.filter(item => currentFilter === 'ALL' || item.type === currentFilter);
+                filtered.forEach(item => {
+                    const line = document.createElement('div');
+                    line.className = 'log-line';
+                    // 时间
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'log-time';
+                    timeSpan.textContent = item.time;
+                    // 标签
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-' + item.type;
+                    badge.textContent = item.type;
+                    // 内容
+                    const content = document.createElement('span');
+                    content.className = 'log-content';
+                    let displayMsg = item.msg;
+                    displayMsg = displayMsg.replace(/(\{[\s\S]*\})/g, '<span class="log-data">$1</span>');
+                    content.innerHTML = displayMsg;
+
+                    line.appendChild(timeSpan);
+                    line.appendChild(badge);
+                    line.appendChild(content);
+                    logEl.appendChild(line);
+                });
+                logEl.scrollTop = logEl.scrollHeight;
+                logCountEl.textContent = rawLogs.length;
+            }
+
+            // ---------- 添加日志条目 ----------
+            function addLog(type, msg) {
+                const now = new Date();
+                const time = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+                const item = { time, type, msg };
+                rawLogs.push(item);
+                if (rawLogs.length > MAX_LOG_COUNT) rawLogs.shift();
+
+                // ✅ 如果当前筛选器是 "ALL" 或与日志类型匹配，增量追加（不重建）
+                if (currentFilter === 'ALL' || currentFilter === type) {
+                    appendLogItem(item);
+                } else {
+                    // 如果筛选器激活且不匹配，重新渲染（保证筛选视图正确）
+                    renderLogs();
+                }
+
+                logCountEl.textContent = rawLogs.length;
+            }
+
+            // 增量追加一条日志（不重建整个列表）
+            function appendLogItem(item) {
+                const line = document.createElement('div');
+                line.className = 'log-line';
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-time';
+                timeSpan.textContent = item.time;
+
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-' + item.type;
+                badge.textContent = item.type;
+
+                const content = document.createElement('span');
+                content.className = 'log-content';
+                let displayMsg = item.msg;
+                displayMsg = displayMsg.replace(/(\{[\s\S]*\})/g, '<span class="log-data">$1</span>');
+                content.innerHTML = displayMsg;
+
+                line.appendChild(timeSpan);
+                line.appendChild(badge);
+                line.appendChild(content);
+                logEl.appendChild(line);
+
+                // 如果日志数量超过最大限制，移除最旧的一条（DOM 和 rawLogs 保持同步）
+                while (logEl.children.length > MAX_LOG_COUNT) {
+                    logEl.removeChild(logEl.firstChild);
+                }
+
+                // 自动滚动到底部
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            window._logPanelLog = addLog; // 供外部调用（可选）
+
+            // ---------- 拦截 MySendData 赋值（记录发出） ----------
+            (function setupProxy() {
+                const original = window.sharedData || {};
+                const handler = {
+                    set(target, prop, value) {
+                        if (prop === 'MySendData') {
+                            let display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+                            addLog('SEND', display);
+                            target[prop] = value;
+                        } else {
+                            target[prop] = value;
+                        }
+                        return true;
+                    },
+                    get(target, prop) {
+                        return target[prop];
+                    }
+                };
+                const proxy = new Proxy(original, handler);
+                Object.defineProperty(window, 'sharedData', {
+                    get: function () { return proxy; },
+                    set: function (val) {
+                        console.warn('sharedData 被重新赋值，忽略');
+                    },
+                    configurable: true
+                });
+            })();
+
+            // ---------- 监听 MyReceiveDataChanged 事件（记录收到） ----------
+            const bus = window.dataBus;
+            if (bus) {
+                bus.addEventListener('MyReceiveDataChanged', function (e) {
+                    const data = e.detail.MyReceiveData;
+                    if (data) {
+                        let display = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+                        addLog('RECE', display);
+                    }
+                });
+            } else {
+                console.warn('dataBus 未找到，无法监听 MyReceiveDataChanged');
+            }
+
+            // ---------- 折叠/展开 ----------
+            logHeader.addEventListener('click', function (e) {
+                if (e.target.closest('.btn-tool')) return;
+                logPanel.classList.toggle('open');
+            });
+
+            // ---------- 筛选按钮 ----------
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    renderLogs();
+                });
+            });
+
+            // ---------- 清空 ----------
+            document.getElementById('btnClearLog').addEventListener('click', function () {
+                rawLogs = [];
+                renderLogs();
+            });
+
+            // ---------- 复制 ----------
+            document.getElementById('btnCopyLog').addEventListener('click', async function () {
+                const text = rawLogs.map(i => `[${i.time}] [${i.type}] ${i.msg}`).join('\n');
+                try {
+                    await navigator.clipboard.writeText(text);
+                    addLog('INFO', '日志已复制到剪贴板');
+                } catch (e) {
+                    addLog('INFO', '复制失败: ' + e.message);
+                }
+            });
+
+            // 初始日志
+            // addLog('INFO', '日志系统已启动，等待通信数据...');
+        })();
+    </script>
 
     <!-- ============================================================ -->
     <!-- 设备专属脚本（开关转圈等待，滑块保持新值等待确认）            -->
@@ -513,7 +921,20 @@
             // ---------- 发送数据 ----------
             function sendState(state) {
                 if (window.sharedData) {
-                    window.sharedData.MySendData = state;
+                    const payload = {
+                        id: 1,
+                        state: {
+                            light: currentState.light,
+                            mode: currentState.mode,
+                            h: currentState.h,
+                            s: currentState.s,
+                            l: currentState.l,
+                            brightness: currentState.brightness,
+                            white: currentState.white
+                        },
+                    };
+                    window.sharedData.MySendData = payload;
+                    // console.log('要发送的payload', payload);
                 } else {
                     console.warn('sharedData 不可用，无法发送状态');
                 }
@@ -533,7 +954,9 @@
                 // 进入 pending（UI 不改变，只转圈）
                 togglePending = true;
                 this.classList.add('pending');
-                sendState({ light: newLight });
+
+                currentState.light = newLight;
+                sendState(currentState);
 
                 // 超时回退
                 if (toggleTimer) clearTimeout(toggleTimer);
@@ -650,8 +1073,22 @@
             // ---------- 外部数据同步（MyReceiveDataChanged） ----------
             if (bus) {
                 bus.addEventListener('MyReceiveDataChanged', function (e) {
-                    const data = e.detail.MyReceiveData;
-                    if (!data) return;
+                    const total_data = e.detail.MyReceiveData;
+                    if (total_data) {
+                        id = total_data.id;
+                        if (id == 1) {
+                            console.log('html_1收到的数据:', total_data);
+                        } else {
+                            console.log('get error id:', total_data);
+                            return;
+                        }
+
+                    } else {
+                        return;
+                    }
+                    const data = total_data.state;
+
+                    console.log('data的数据:', data);
 
                     // 更新状态
                     if (data.light !== undefined) currentState.light = data.light;
@@ -662,6 +1099,7 @@
 
                     // 更新 UI
                     updateUIFromState(currentState);
+
 
                     // 更新 lastSyncedState
                     lastSyncedState = { ...currentState };

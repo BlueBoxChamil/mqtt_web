@@ -247,7 +247,10 @@
         let nodes = [coreNode];   // 所有节点（核心 + 外部设备）
 
         //添加服务器ip
-        const BASE_URL = 'http://192.168.164.128:8080';  // 改成你的服务器地址
+        // 公司
+        // const BASE_URL = 'http://192.168.164.128:8080';  // 改成你的服务器地址
+        // 家
+        const BASE_URL = 'http://192.168.12.138:8080';  // 改成你的服务器地址
         const DEVICE_ID = 1;  // 需要轮询的设备ID
 
         // ---------- WebSocket 与轮询控制 ----------
@@ -523,6 +526,9 @@
                 const contentArea = document.getElementById('panelContentArea');
                 contentArea.innerHTML = `<div class="text-center text-zinc-500 py-10 text-sm mono">该设备暂无控制面板</div>`;
             }
+
+            console.log('打开网页1');
+            window.sharedData.MyReceiveData = device_info_1;
         }
 
         // ========== 更新面板状态显示 ==========
@@ -566,7 +572,8 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                console.log('[Poll] 设备状态:', data);
+                // console.log('[Poll] 设备状态:', data);
+                window.sharedData.MyReceiveData = data;
                 // 在这里可以解析 data，存储到变量或触发其他逻辑，但不更新UI
                 // 例如：检测在线状态变化、记录数据等
                 // 如果需要使用，可保存到全局变量，如 window._lastDeviceData = data;
@@ -640,12 +647,9 @@
                     // 如需处理 capabilities，可参考原 openai_style 的逻辑
                     return;
                 }
-
-                // 状态推送（包含 light / mode / brightness 等）
-                console.log('[WS] 设备状态更新:', data);
+                // console.log('state 的类型:', typeof data);
                 window.sharedData.MyReceiveData = data;
-                // 可存储到全局变量供其他逻辑使用，例如 window._lastState = data;
-                // 但不更新 UI
+
             };
 
             ws.onerror = (err) => {
@@ -693,9 +697,17 @@
             MySendData: null, // 发送的数据
         }, bus);
 
+        var device_info_1 = null;
         // 监听通用事件
         bus.addEventListener('MyReceiveDataChanged', (e) => {
-            console.log('主页面收到的数据:', e.detail.MyReceiveData);
+            const data = e.detail.MyReceiveData;
+            console.log('主页面收到的数据:', data);
+
+            // 同时满足：id 为 1 且 name 字段存在
+            if (data.id === 1 && data.name != undefined) {
+                device_info_1 = data;
+                console.log('已更新设备信息:', device_info_1);
+            }
         });
 
         // 监听共享数据事件
@@ -1093,7 +1105,7 @@
             requestAnimationFrame(animate);
 
             // 启动轮询（作为初始和后备）
-            startPolling();
+            // startPolling();
             // 连接 WebSocket
             connectWebSocket();
         }
