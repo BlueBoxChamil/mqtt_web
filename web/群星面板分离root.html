@@ -528,7 +528,7 @@
             }
 
             console.log('打开网页1');
-            window.sharedData.MyReceiveData = device_info_1;
+            // window.sharedData.MyMasAdv = device_info_1;
         }
 
         // ========== 更新面板状态显示 ==========
@@ -551,6 +551,7 @@
         // ========== 关闭面板 ==========
         function closePanel() {
             if (!focusedNode) return;
+
             const panel = document.getElementById('controlPanel');
             panel.classList.add('opacity-0', 'pointer-events-none', 'scale-95', 'translate-y-3');
 
@@ -563,6 +564,9 @@
             camera.targetY = 0;
 
             focusedNode = null;
+
+            console.log("B关闭返回:", window.sharedData.device_info_1);
+
         }
 
         // ========== 设备状态轮询（仅解析，不更新UI） ==========
@@ -693,11 +697,14 @@
 
         // 定义槽位
         window.sharedData = createReactive({
-            MyReceiveData: null, // 接收到的数据
-            MySendData: null, // 发送的数据
+            MyReceiveData: null, // 网页接收到的数据
+            MySendData: null, // 网页发送的数据
+            MyMasAdv: null, //主界面广播的数据
+            MySerAdv: null,//子节点广播的数据
+            device_info_1: null,
         }, bus);
 
-        var device_info_1 = null;
+        // var device_info_1 = null;
         // 监听通用事件
         bus.addEventListener('MyReceiveDataChanged', (e) => {
             const data = e.detail.MyReceiveData;
@@ -705,16 +712,20 @@
 
             // 同时满足：id 为 1 且 name 字段存在
             if (data.id === 1 && data.name != undefined) {
-                device_info_1 = data;
-                console.log('已更新设备信息:', device_info_1);
+                window.sharedData.device_info_1 = data;
+                console.log('已更新设备信息:', window.sharedData.device_info_1);
             }
+
+            if (data.id === 1) {
+                window.sharedData.MyMasAdv = data;
+            }
+
         });
 
-        // 监听共享数据事件
-        bus.addEventListener('MySendDataChanged', (e) => {
+        bus.addEventListener('MySerAdvChanged', (e) => {
             // 更新收到的ws数据
-            console.log('主页面收到其他页面的发送数据:', e.detail.MySendData);
-            sendCommand(DEVICE_ID, e.detail.MySendData);
+            console.log('主页面收到其他页面的发送数据:', e.detail.MySerAdv);
+            sendCommand(DEVICE_ID, e.detail.MySerAdv);
         });
 
 

@@ -1,7 +1,7 @@
 <!--
  * @Author: BlueboxChamil
  * @Date: 2026-07-30 11:47:04
- * @LastEditTime: 2026-08-02 20:31:47
+ * @LastEditTime: 2026-08-03 22:05:57
  * @FilePath: \web\devices\1.html
  * @Description: 
  * Copyright (c) 2026 by BlueboxChamil, All Rights Reserved. 
@@ -754,12 +754,12 @@
 
             window._logPanelLog = addLog; // 供外部调用（可选）
 
-            // ---------- 拦截 MySendData 赋值（记录发出） ----------
+            // ---------- 拦截 MySerAdv 赋值（记录发出） ----------
             (function setupProxy() {
                 const original = window.sharedData || {};
                 const handler = {
                     set(target, prop, value) {
-                        if (prop === 'MySendData') {
+                        if (prop === 'MySerAdv') {
                             let display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
                             addLog('SEND', display);
                             target[prop] = value;
@@ -782,18 +782,18 @@
                 });
             })();
 
-            // ---------- 监听 MyReceiveDataChanged 事件（记录收到） ----------
+            // ---------- 监听 MyMasAdvChanged 事件（记录收到） ----------
             const bus = window.dataBus;
             if (bus) {
-                bus.addEventListener('MyReceiveDataChanged', function (e) {
-                    const data = e.detail.MyReceiveData;
+                bus.addEventListener('MyMasAdvChanged', function (e) {
+                    const data = e.detail.MyMasAdv;
                     if (data) {
                         let display = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
                         addLog('RECE', display);
                     }
                 });
             } else {
-                console.warn('dataBus 未找到，无法监听 MyReceiveDataChanged');
+                console.warn('dataBus 未找到，无法监听 MyMasAdvChanged');
             }
 
             // ---------- 折叠/展开 ----------
@@ -933,7 +933,7 @@
                             white: currentState.white
                         },
                     };
-                    window.sharedData.MySendData = payload;
+                    window.sharedData.MySerAdv = payload;
                     // console.log('要发送的payload', payload);
                 } else {
                     console.warn('sharedData 不可用，无法发送状态');
@@ -966,6 +966,7 @@
                         toggleTrack.classList.remove('pending');
                         currentState = { ...lastSyncedState };
                         updateUIFromState(currentState);
+                        currentRPM.state = currentState;
                         console.warn('⏰ 开关超时，回退到之前状态');
                     }
                 }, 5000);
@@ -1004,6 +1005,7 @@
                         // 回退到发送前的状态
                         currentState = { ...sliderRevertState };
                         updateUIFromState(currentState);
+                        currentRPM.state = currentState;
                         console.warn('⏰ 滑块超时，回退到之前状态');
                     }
                 }, 5000);
@@ -1034,6 +1036,7 @@
                         sliderPending = false;
                         currentState = { ...sliderRevertState };
                         updateUIFromState(currentState);
+                        currentRPM.state = currentState;
                         console.warn('⏰ 滑块超时，回退到之前状态');
                     }
                 }, 5000);
@@ -1064,16 +1067,24 @@
                         sliderPending = false;
                         currentState = { ...sliderRevertState };
                         updateUIFromState(currentState);
+                        currentRPM.state = currentState;
                         console.warn('⏰ 滑块超时，回退到之前状态');
                     }
                 }, 5000);
                 console.log('📤 明度已发送:', currentState.l, '，等待确认...');
             });
 
-            // ---------- 外部数据同步（MyReceiveDataChanged） ----------
+            currentRPM = window.sharedData.device_info_1;
+            // console.log('加载信息:', currentRPM);
+            console.log('加载state信息:', currentRPM.state);
+            if (Object.keys(currentRPM.state).length > 0) {
+                currentState = currentRPM.state;
+            }
+
+            // ---------- 外部数据同步（MyMasAdvChanged） ----------
             if (bus) {
-                bus.addEventListener('MyReceiveDataChanged', function (e) {
-                    const total_data = e.detail.MyReceiveData;
+                bus.addEventListener('MyMasAdvChanged', function (e) {
+                    const total_data = e.detail.MyMasAdv;
                     if (total_data) {
                         id = total_data.id;
                         if (id == 1) {
@@ -1099,6 +1110,7 @@
 
                     // 更新 UI
                     updateUIFromState(currentState);
+                    currentRPM.state = currentState;
 
 
                     // 更新 lastSyncedState
@@ -1129,6 +1141,7 @@
                 });
             }
 
+
             // ---------- 初始化 ----------
             if (window.sharedData && window.sharedData.latestData) {
                 const init = window.sharedData.latestData;
@@ -1139,6 +1152,7 @@
                 if (init.mode !== undefined) currentState.mode = init.mode;
                 lastSyncedState = { ...currentState };
             }
+
 
             updateUIFromState(currentState);
             console.log('✅ Matrix Core 控制器已启动（开关转圈等待，滑块保持新值等待确认）');
