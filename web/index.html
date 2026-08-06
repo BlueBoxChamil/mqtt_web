@@ -1,282 +1,956 @@
 <!DOCTYPE html>
-<!-- 网页语言是中文 -->
 <html lang="zh-CN">
 
 <head>
-  <!-- 编码为utf-8 -->
-  <meta charset="UTF-8">
-  <!-- 浏览器标签页显示名字 -->
-  <title>设备控制 - 灯</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Device Universe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  <!-- style是css部分网页，网页样式 -->
-  <!-- <style>
-    body {
-      font-family: -apple-system, "Microsoft YaHei", sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 24px;
-    }
+        :root {
+            color-scheme: dark;
+        }
 
-    .container {
-      max-width: 420px;
-      margin: 0 auto;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030305 !important;
+            color: #ededed !important;
+            overflow: hidden;
+            user-select: none;
+        }
 
-    .config {
-      margin-bottom: 16px;
-      font-size: 13px;
-      color: #555;
-    }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
 
-    .config input {
-      width: 220px;
-      padding: 4px 6px;
-    }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
 
-    .card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
-    .card h2 {
-      margin: 0 0 12px 0;
-      font-size: 18px;
-    }
+        .glass-panel {
+            background: rgba(12, 12, 18, 0.85);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
 
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 4px;
-    }
+        #controlPanel {
+            background: rgba(22, 22, 24, 0.94);
+            backdrop-filter: blur(36px);
+            -webkit-backdrop-filter: blur(36px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 24px 54px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
 
-    .dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 6px;
-      background: #aaa;
-    }
+        .corner-marker {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: rgba(255, 255, 255, 0.12);
+            pointer-events: none;
+        }
 
-    .dot.online {
-      background: #2ecc71;
-    }
+        .corner-tl {
+            top: 28px;
+            left: 28px;
+            border-top: 1px solid;
+            border-left: 1px solid;
+        }
 
-    .dot.on {
-      background: #f1c40f;
-    }
+        .corner-tr {
+            top: 28px;
+            right: 28px;
+            border-top: 1px solid;
+            border-right: 1px solid;
+        }
 
-    .btns {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-    }
+        .corner-bl {
+            bottom: 28px;
+            left: 28px;
+            border-bottom: 1px solid;
+            border-left: 1px solid;
+        }
 
-    button {
-      flex: 1;
-      padding: 12px 0;
-      font-size: 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .btn-on {
-      background: #2ecc71;
-      color: #fff;
-    }
-
-    .btn-off {
-      background: #e74c3c;
-      color: #fff;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .log {
-      margin-top: 20px;
-      background: #111;
-      color: #0f0;
-      font-family: monospace;
-      font-size: 12px;
-      height: 160px;
-      overflow-y: auto;
-      padding: 8px;
-      border-radius: 6px;
-    }
-
-    .log div {
-      margin-bottom: 2px;
-      white-space: pre-wrap;
-    }
-  </style> -->
+        .corner-br {
+            bottom: 28px;
+            right: 28px;
+            border-bottom: 1px solid;
+            border-right: 1px solid;
+        }
+    </style>
 </head>
 
-<!-- hmtl网页主体 -->
+<body class="w-screen h-screen relative flex items-center justify-between">
 
-<body>
-  <div class="container">
+    <!-- 四角工程定位符 -->
+    <div class="corner-marker corner-tl"></div>
+    <div class="corner-marker corner-tr"></div>
+    <div class="corner-marker corner-bl"></div>
+    <div class="corner-marker corner-br"></div>
 
-    <div class="config">
-      服务器地址:
-      <input id="baseUrl" value="http://192.168.12.138:8080">
-      <button id="btnRefresh" style="width:auto;padding:4px 10px;">刷新状态</button>
+    <!-- 顶部状态栏 -->
+    <header class="absolute top-8 left-12 z-10 flex items-center space-x-4 pointer-events-auto cursor-pointer group"
+        ondblclick="toggleFullScreen()" title="双击此处切换浏览器全屏/窗口模式">
+        <div class="flex items-center space-x-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-white animate-pulse group-hover:scale-150 transition-transform">
+            </div>
+            <span
+                class="text-xs uppercase tracking-widest text-zinc-300 mono group-hover:text-white transition-colors">BLUEBOX
+                CHAMIL [双击全屏]</span>
+        </div>
+        <span class="text-zinc-700">/</span>
+        <span class="text-xs text-zinc-500 mono" id="system-status">NODES ONLINE</span>
+    </header>
+
+    <!-- 初始中央状态指引胶囊 -->
+    <div id="initialHintPill"
+        class="absolute top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-all duration-500">
+        <div
+            class="px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 backdrop-blur-md flex items-center space-x-3 text-xs text-zinc-400 mono shadow-2xl">
+            <span class="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-ping"></span>
+            <span>SPACE UNIVERSE READY · SELECT NODE TO INSPECT</span>
+        </div>
     </div>
 
-    <div class="card">
-      <h2>灯 (device 1)</h2>
-      <div class="status-row">
-        <span>
-          <span id="dotOnline" class="dot"></span>
-          在线状态:
-          <span id="txtOnline">未知</span>
-        </span>
-      </div>
-
-      <div class="status-row">
-        <span>
-          <span id="dotOn" class="dot"></span>
-          开关状态:
-          <span id="txtState">未知</span>
-        </span>
-      </div>
-
-      <div class="btns">
-        <button id="btnOn" class="btn-on">开灯</button>
-        <button id="btnOff" class="btn-off">关灯</button>
-      </div>
+    <!-- 右上角：实时系统遥测参数 -->
+    <div
+        class="absolute top-8 right-12 z-10 hidden md:flex items-center space-x-6 text-xs mono text-zinc-500 pointer-events-none">
+        <div>ARCH: <span class="text-zinc-300">CENTRALIZED</span></div>
+        <div>BUS: <span class="text-zinc-300">12ms</span></div>
+        <div id="liveClock" class="text-zinc-400">00:00:00</div>
     </div>
 
-    <div class="log" id="log"></div>
-  </div>
+    <!-- 左下角：微型拓扑状态统计卡片 -->
+    <div
+        class="absolute bottom-16 left-12 z-10 pointer-events-none hidden lg:flex items-center space-x-3 px-3.5 py-2 rounded-xl glass-panel text-[11px] mono text-zinc-400 shadow-xl">
+        <span class="text-zinc-200 font-medium tracking-wider">TOPOLOGY:</span>
+        <span class="text-zinc-400">CORE: <strong class="text-zinc-200">1</strong></span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-400">NODES: <strong class="text-zinc-200" id="nodeCount">0</strong></span>
+    </div>
 
-  <!-- 脚本部分 -->
-  <script>
-    // 当前控制的设备id是1
-    const DEVICE_ID = 1;
+    <!-- 底部操作提示 -->
+    <footer class="absolute bottom-8 left-12 z-10 pointer-events-none flex items-center space-x-6">
+        <p class="text-sm text-zinc-500 tracking-wider">点击任意设备节点以聚焦控制面板 · 双击左上角标题切换全屏</p>
+        <span class="text-zinc-800">|</span>
+        <span class="text-xs text-zinc-600 mono">SYS.GRID // v2.6.2</span>
+    </footer>
 
-    // 定义函数baseUrl，调用会返回服务器的地址
-    function baseUrl() {
-      // 通过id来寻找元素，得到字符串，如果服务器地址最后一个字符是"/"的话，去掉
-      return document.getElementById('baseUrl').value.replace(/\/$/, '');
-    }
+    <!-- 主画布 -->
+    <main class="w-full h-full relative cursor-grab active:cursor-grabbing" id="canvas-container">
+        <canvas id="universeCanvas" class="block w-full h-full"></canvas>
+    </main>
 
-    // 定义日志输出函数
-    function log(msg) {
-      // 通过id寻找元素，保存到el中
-      const el = document.getElementById('log');
-      // 创建一个元素，理解为动态生成html
-      const line = document.createElement('div');
-      // 获取时间
-      const time = new Date().toLocaleTimeString();
-      // 设置line元素里的文本内容
-      line.textContent = `[${time}] ${msg}`;
-      // 将新创建的line元素追加到日志窗口中
-      el.appendChild(line);
-      // 设置滚动条移动到最下边，就像聊天可以看到最新消息
-      el.scrollTop = el.scrollHeight;
-    }
+    <!-- 动态控制面板（空容器，由子页面完全填充） -->
+    <aside id="controlPanel"
+        class="absolute w-[540px] rounded-2xl z-30 opacity-0 pointer-events-none scale-95 translate-y-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl"
+        style="background: rgba(22, 22, 24, 0.94); backdrop-filter: blur(36px); border: 1px solid rgba(255,255,255,0.14);">
+        <!-- 内容完全由子页面动态填充 -->
+    </aside>
 
-    // 定义异步函数，获取设备状态，用于更新界面
-    async function refreshStatus() {
-      try {
-        // 等价于curl http://xxx/api/device/1
-        const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}`);
-        if (!res.ok) {
-          log(`获取状态失败: HTTP ${res.status}`);
-          return;
-        }
-        // ws转发的mqtt数据，得到json数据data
-        const data = await res.json();
-        log(`GET /api/device/${DEVICE_ID} -> ${JSON.stringify(data)}`);
-
-        // 将data转为js对象，才能访问，进行比较得到bool结果
-        const online = data.online === 1;
-        // 修改该元素文字
-        document.getElementById('txtOnline').textContent = online ? '在线' : '离线';
-        // 修改class，为真class是dot online，为假是dot，在html中的空格在css中使用点来代替
-        document.getElementById('dotOnline').className = 'dot' + (online ? ' online' : '');
-
-        let lightOn = null;
-        try {
-          // state是json字符串，转为javaScript对象，这样stateObj.light就可以直接访问了
-          const stateObj = JSON.parse(data.state);
-          // 判断json里有没有light字段
-          if (typeof stateObj.light !== 'undefined') {
-            lightOn = stateObj.light === 1;
-          }
-        } catch (e) {
-          // state 不是合法 json 或还没有上报过,忽略
+    <script>
+        // ========== 全屏切换 ==========
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`全屏切换失败: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
 
-        if (lightOn === null) {
-          document.getElementById('txtState').textContent = '未知';
-          document.getElementById('dotOn').className = 'dot';
-        } else {
-          document.getElementById('txtState').textContent = lightOn ? '开' : '关';
-          document.getElementById('dotOn').className = 'dot' + (lightOn ? ' on' : '');
-        }
-      }
-      // try执行失败后会到这里
-      catch (e) {
-        log(`请求异常: ${e.message}`);
-      }
-    }
+        // ========== 时钟更新 ==========
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toTimeString().split(' ')[0];
+        }, 1000);
 
-    // 定义异步函数，发送开关指令
-    async function sendCmd(on) {
-      const body = JSON.stringify({ light: on ? 1 : 0 });
-      try {
-        const res = await fetch(`${baseUrl()}/api/device/${DEVICE_ID}/cmd`, {
-          method: 'POST',
-          body: body
+        // ========== Canvas 初始化 ==========
+        const canvas = document.getElementById('universeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // ========== 核心节点 ==========
+        const coreNode = {
+            id: 'BLUEBOX-CORE',
+            name: 'BLUEBOX CHAMIL',
+            type: 'Master Core',
+            address: '192.168.1.1',
+            rssi: '0 dBm',
+            x: 0.50,
+            y: 0.50,
+            radius: 30,
+            baseAlpha: 1.0,
+            fieldScale: 1,
+            isCore: true,
+            worldX: 0,
+            worldY: 0,
+            vx: 0,
+            vy: 0,
+            breathPhase: Math.random() * Math.PI * 2,
+            breathSpeed: 0.012,
+            panelFile: 'devices/root.html',
+            status: 'online'
+        };
+
+        let externalDevices = [];
+        let nodes = [coreNode];
+
+        // 服务器地址
+        // const BASE_URL = 'http://192.168.164.128:8080';  // 公司
+        const BASE_URL = 'http://192.168.12.138:8080';  // 家
+        const DEVICE_ID = 1;
+
+        // ---------- WebSocket 与轮询 ----------
+        let ws = null;
+        let wsReconnectTimer = null;
+        let pollTimer = null;
+        let wsReconnectDelay = 2000;
+        const POLL_INTERVAL = 10000;
+
+        const bus = new EventTarget();
+        window.dataBus = bus;
+
+        let commandPending = false;
+
+        // ========== 环境粒子 ==========
+        const ambientParticles = Array.from({ length: 200 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.08,
+            vy: (Math.random() - 0.5) * 0.08,
+            radius: 1.0 + Math.random() * 1.5,
+            alpha: 0.1 + Math.random() * 0.2
+        }));
+
+        let focusedNode = null;
+        let activePanelIsOnRight = true;
+        let mouse = { x: -1000, y: -1000, hoverNode: null };
+
+        let camera = {
+            x: 0, y: 0, zoom: 1.0,
+            targetX: 0, targetY: 0, targetZoom: 1.0
+        };
+
+        const panelContentCache = {};
+
+        // ========== 加载核心节点配置 ==========
+        async function loadCoreDevice(path) {
+            try {
+                const html = await (await fetch(path)).text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const configScript = doc.querySelector('script[type="application/json"].device-config');
+                if (configScript) {
+                    const config = JSON.parse(configScript.textContent);
+                    coreNode.id = config.id || coreNode.id;
+                    coreNode.name = config.name || coreNode.name;
+                    coreNode.type = config.type || coreNode.type;
+                    coreNode.address = config.address || coreNode.address;
+                    coreNode.rssi = config.rssi || coreNode.rssi;
+                    coreNode.status = config.status || coreNode.status;
+                    coreNode.radius = config.radius !== undefined ? config.radius : coreNode.radius;
+                    coreNode.baseAlpha = config.baseAlpha !== undefined ? config.baseAlpha : coreNode.baseAlpha;
+                    coreNode.panelOffsetX = config.panelOffsetX !== undefined ? config.panelOffsetX : 35;
+                    coreNode.panelOffsetY = config.panelOffsetY !== undefined ? config.panelOffsetY : 0;
+                    coreNode.fieldScale = coreNode.radius / 30;
+                }
+                if (configScript) configScript.remove();
+                panelContentCache[path] = doc.body.innerHTML;
+                coreNode.panelFile = path;
+            } catch (err) {
+                console.warn('加载核心节点配置失败:', err);
+            }
+        }
+
+        // ========== 从 devices/ 加载设备配置 ==========
+        async function loadDevices() {
+            try {
+                const response = await fetch('devices.json');
+                const devicePaths = await response.json();
+
+                const rootPath = devicePaths.find(path => path.includes('root.html'));
+                const externalPaths = devicePaths.filter(path => !path.includes('root.html'));
+                const totalDevices = externalPaths.length;
+
+                if (rootPath) await loadCoreDevice(rootPath);
+
+                const angleStep = (Math.PI * 2) / Math.max(totalDevices, 1);
+                const radiusMin = 0.18;
+                const radiusMax = 0.38;
+
+                const loadPromises = externalPaths.map(async (path, index) => {
+                    try {
+                        const htmlResponse = await fetch(path);
+                        const htmlContent = await htmlResponse.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlContent, 'text/html');
+                        const configScript = doc.querySelector('script[type="application/json"].device-config');
+                        if (!configScript) {
+                            console.warn(`设备文件 ${path} 中未找到设备配置，跳过`);
+                            return null;
+                        }
+                        const deviceConfig = JSON.parse(configScript.textContent);
+                        if (deviceConfig.radius === undefined) deviceConfig.radius = 12;
+                        if (deviceConfig.baseAlpha === undefined) deviceConfig.baseAlpha = 0.9;
+
+                        if (deviceConfig.x === undefined || deviceConfig.y === undefined) {
+                            const angle = index * angleStep + (Math.random() - 0.5) * 0.4;
+                            const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
+                            deviceConfig.x = 0.5 + Math.cos(angle) * radius;
+                            deviceConfig.y = 0.5 + Math.sin(angle) * radius;
+                        }
+                        deviceConfig.worldX = (deviceConfig.x - 0.5) * 1200;
+                        deviceConfig.worldY = (deviceConfig.y - 0.5) * 800;
+                        deviceConfig.vx = (Math.random() - 0.5) * 0.15;
+                        deviceConfig.vy = (Math.random() - 0.5) * 0.15;
+                        deviceConfig.breathPhase = Math.random() * Math.PI * 2;
+                        deviceConfig.breathSpeed = 0.012 + Math.random() * 0.015;
+                        deviceConfig.panelFile = path;
+                        deviceConfig.isCore = false;
+                        deviceConfig.panelOffsetX = deviceConfig.panelOffsetX || 35;
+                        deviceConfig.panelOffsetY = deviceConfig.panelOffsetY || 0;
+
+                        configScript.remove();
+                        const panelContent = doc.body.innerHTML;
+                        panelContentCache[path] = panelContent;
+                        return deviceConfig;
+                    } catch (err) {
+                        console.error(`加载设备文件 ${path} 失败:`, err);
+                        return null;
+                    }
+                });
+
+                const loadedDevices = await Promise.all(loadPromises);
+                externalDevices = loadedDevices.filter(d => d !== null);
+                nodes = [coreNode, ...externalDevices];
+                document.getElementById('nodeCount').innerText = externalDevices.length;
+                document.getElementById('system-status').innerText = `${externalDevices.length + 1} NODES ONLINE`;
+                console.log(`已加载 ${externalDevices.length} 个外部设备节点`);
+            } catch (err) {
+                console.error('加载 devices.json 失败:', err);
+            }
+        }
+
+        // ========== 加载面板内容到控制面板（整个面板） ==========
+        async function loadPanelContent(devicePath) {
+            const panel = document.getElementById('controlPanel');
+
+            if (panelContentCache[devicePath]) {
+                panel.innerHTML = panelContentCache[devicePath];
+                executePanelScripts(panel);
+                return;
+            }
+
+            try {
+                const res = await fetch(devicePath);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const html = await res.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const cfgEl = doc.querySelector('script[type="application/json"].device-config');
+                if (cfgEl) cfgEl.remove();
+                const panelContent = doc.body.innerHTML;
+                panelContentCache[devicePath] = panelContent;
+                panel.innerHTML = panelContent;
+                executePanelScripts(panel);
+            } catch (err) {
+                console.error('加载面板失败:', err);
+                panel.innerHTML = `<div class="text-center text-zinc-500 py-10 text-sm mono">加载失败: ${err.message}</div>`;
+            }
+        }
+
+        // ========== 执行面板内的脚本 ==========
+        function executePanelScripts(container) {
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(script => {
+                if (script.type && script.type !== 'text/javascript' && script.type !== '') return;
+                const newScript = document.createElement('script');
+                if (script.src) {
+                    newScript.src = script.src;
+                } else {
+                    newScript.textContent = script.textContent;
+                }
+                script.parentNode.replaceChild(newScript, script);
+            });
+        }
+
+        // ========== 鼠标交互 ==========
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            if (focusedNode) return;
+
+            let worldMouseX = (mouse.x - width / 2) / camera.zoom + camera.x;
+            let worldMouseY = (mouse.y - height / 2) / camera.zoom + camera.y;
+
+            let found = null;
+            for (let node of nodes) {
+                let dx = node.worldX - worldMouseX;
+                let dy = node.worldY - worldMouseY;
+                let hitRadius = node.isCore
+                    ? Math.max(120, (node.radius || 30) * 4)
+                    : Math.max(35, (node.radius || 12) * 3);
+                if (Math.sqrt(dx * dx + dy * dy) < hitRadius) {
+                    found = node;
+                    break;
+                }
+            }
+            mouse.hoverNode = found;
+            canvas.style.cursor = found ? 'pointer' : 'grab';
         });
-        const text = await res.text();
-        log(`POST /api/device/${DEVICE_ID}/cmd ${body} -> ${res.status} ${text}`);
-        // 命令是异步下发给设备的,这里延迟一点再刷新状态
-        setTimeout(refreshStatus, 500);
-      } catch (e) {
-        log(`发送指令异常: ${e.message}`);
-      }
-    }
 
-    // 绑定按钮
-    document.getElementById('btnOn').onclick = () => sendCmd(true);
-    document.getElementById('btnOff').onclick = () => sendCmd(false);
-    document.getElementById('btnRefresh').onclick = refreshStatus;
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = -1000;
+            mouse.y = -1000;
+            mouse.hoverNode = null;
+        });
 
-    // WebSocket: 观察服务端推送(目前只有设备 info 更新会推送,state 更新暂时不会)
+        canvas.addEventListener('click', () => {
+            if (mouse.hoverNode && !focusedNode) {
+                selectNode(mouse.hoverNode);
+            }
+        });
 
-    function connectWs() {
-      const wsUrl = baseUrl().replace(/^http/, 'ws') + '/ws';
-      //建立长连接
-      const ws = new WebSocket(wsUrl);
+        // ========== 选择节点 ==========
+        function selectNode(node) {
+            focusedNode = node;
+            camera.targetZoom = 2.6;
+            camera.targetX = node.worldX + (width * 0.15) / 2.6;
+            camera.targetY = node.worldY;
 
-      // 连接成功执行打印
-      ws.onopen = () => log(`WS 已连接: ${wsUrl}`);
-      // ws建立成功收到的消息
-      ws.onmessage = (event) => {
-        log(`WS 收到推送: ${event.data}`);
-        // 刷新
-        refreshStatus();
-      };
-      ws.onclose = () => log('WS 已断开');
-      ws.onerror = () => log('WS 连接出错');
-    }
+            const hintPill = document.getElementById('initialHintPill');
+            hintPill.style.opacity = '0';
+            hintPill.style.transform = 'translate(-50%, -20px)';
 
-    // 网页加载完成会执行下边的动作
-    window.onload = () => {
-      refreshStatus();
-      connectWs();
-    };
-  </script>
+            // 直接加载整个面板内容
+            if (node.panelFile) {
+                loadPanelContent(node.panelFile);
+            } else {
+                const panel = document.getElementById('controlPanel');
+                panel.innerHTML = `<div class="text-center text-zinc-500 py-10 text-sm mono">该设备暂无控制面板</div>`;
+            }
+
+            // 保存当前节点供子页面使用（子页面可通过它读取初始名称等）
+            window._currentPanelNode = node;
+        }
+
+        // ========== 关闭面板 ==========
+        function closePanel() {
+            if (!focusedNode) return;
+            const panel = document.getElementById('controlPanel');
+            panel.classList.add('opacity-0', 'pointer-events-none', 'scale-95', 'translate-y-3');
+
+            const hintPill = document.getElementById('initialHintPill');
+            hintPill.style.opacity = '1';
+            hintPill.style.transform = 'translate(-50%, 0)';
+
+            camera.targetZoom = 1.0;
+            camera.targetX = 0;
+            camera.targetY = 0;
+
+            focusedNode = null;
+            window._currentPanelNode = null;
+        }
+
+        // ========== 设备状态轮询 ==========
+        async function fetchDeviceStatus(deviceId = DEVICE_ID) {
+            try {
+                const url = `${BASE_URL}/api/device/${deviceId}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                window.sharedData.MyReceiveData = data;
+            } catch (err) {
+                console.error('[Poll] 获取设备状态失败:', err);
+            }
+        }
+
+        function startPolling() {
+            if (pollTimer) return;
+            console.log('[Poll] 开始轮询');
+            fetchDeviceStatus();
+            pollTimer = setInterval(fetchDeviceStatus, POLL_INTERVAL);
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                console.log('[Poll] 停止轮询');
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        // ========== WebSocket 连接 ==========
+        function wsUrl() {
+            return BASE_URL.replace(/^http/, 'ws') + '/ws';
+        }
+
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(wsUrl());
+            } catch (e) {
+                console.error('[WS] 连接创建失败:', e.message);
+                scheduleReconnect();
+                return;
+            }
+
+            ws.onopen = () => {
+                console.log('[WS] 已连接');
+                wsReconnectDelay = 2000;
+                stopPolling();
+                fetchDeviceStatus();
+            };
+
+            ws.onmessage = (ev) => {
+                console.log('[WS] 收到消息:', ev.data);
+                let data;
+                try {
+                    data = JSON.parse(ev.data);
+                } catch (e) {
+                    return;
+                }
+                // if (data.online !== undefined && data.light === undefined) {
+                //     console.log('[WS] 在线状态更新:', data.online === 1 ? '在线' : '离线');
+                //     // return;
+                // }
+                // if (data.mac !== undefined || data.capabilities !== undefined) {
+                //     console.log('[WS] 设备信息:', data);
+                //     // return;
+                // }
+                window.sharedData.MyReceiveData = data;
+            };
+
+            ws.onerror = (err) => {
+                console.error('[WS] 连接错误:', err);
+            };
+
+            ws.onclose = () => {
+                console.log('[WS] 断开连接');
+                ws = null;
+                startPolling();
+                scheduleReconnect();
+            };
+        }
+
+        function scheduleReconnect() {
+            if (wsReconnectTimer) return;
+            wsReconnectTimer = setTimeout(() => {
+                wsReconnectTimer = null;
+                console.log('[WS] 尝试重连...');
+                connectWebSocket();
+            }, wsReconnectDelay);
+            wsReconnectDelay = Math.min(wsReconnectDelay * 2, 15000);
+        }
+
+        // ========== 共享数据 ==========
+        function createReactive(target, bus) {
+            return new Proxy(target, {
+                set(obj, prop, value) {
+                    obj[prop] = value;
+                    bus.dispatchEvent(new CustomEvent(prop + 'Changed', {
+                        detail: { [prop]: value }
+                    }));
+                    return true;
+                }
+            });
+        }
+
+        window.sharedData = createReactive({
+            MyReceiveData: null,
+            MySendData: null,
+            MyMasAdv: null,
+            MySerAdv: null,
+            MyDeviceInfoAdv: null,//更新除去状态之外的信息
+            device_1_info: null, //这个是保存id1的初始信息的，id2需要另外的参数存储，这个和MyDeviceInfoAdv作用不一样
+            //因为如果没有打开子页面却传入了多个设备信息，最开始的信息会丢失
+        }, bus);
+
+        bus.addEventListener('MyReceiveDataChanged', (e) => {
+            const data = e.detail.MyReceiveData;
+            console.log('主页面收到的数据:', data);
+            if (data && data.id === 1 && data.name !== undefined) {
+
+                window.sharedData.device_1_info = data;
+                console.log('已更新设备信息:', window.sharedData.device_1_info);
+            }
+
+            if (data.id === 1 && data.online === 0) {
+                window.sharedData.MyDeviceInfoAdv = data;
+            }
+
+            if (data && data.id === 1) {
+                window.sharedData.MyMasAdv = data;
+            }
+        });
+
+        bus.addEventListener('MySerAdvChanged', (e) => {
+            console.log('主页面收到其他页面的发送数据:', e.detail.MySerAdv);
+            sendCommand(DEVICE_ID, e.detail.MySerAdv);
+        });
+
+        // ---------- 发送控制指令 ----------
+        async function sendCommand(deviceId, partialState) {
+            if (commandPending) {
+                console.warn('[CMD] 上一条指令尚未完成，请稍后');
+                return;
+            }
+            if (!deviceId) {
+                console.error('[CMD] 无效的设备ID');
+                return;
+            }
+            commandPending = true;
+            try {
+                const payload = { ...partialState };
+                const url = `${BASE_URL}/api/device/${deviceId}/cmd`;
+                const body = JSON.stringify(payload);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body
+                });
+                const text = await response.text();
+                console.log(`[CMD] POST ${url} -> ${response.status} ${text}`);
+                console.log(`[CMD] BODY ${body}`);
+                if (!response.ok) {
+                    console.warn('[CMD] 指令未成功，设备可能保持原状态');
+                } else {
+                    if (!ws || ws.readyState !== WebSocket.OPEN) {
+                        fetchDeviceStatus(deviceId);
+                    }
+                }
+            } catch (err) {
+                console.error('[CMD] 发送指令异常:', err);
+            } finally {
+                commandPending = false;
+            }
+        }
+
+        // ========== 全局辅助函数 ==========
+        function handleDeviceToggle(checkbox, deviceId) {
+            console.log(`设备 ${deviceId} 状态切换: ${checkbox.checked ? '开启' : '关闭'}`);
+        }
+
+        function toggleRelayChannel(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.innerText = el.innerText === '关闭' ? '开启' : '关闭';
+            }
+        }
+
+        function toggleUSBPort(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.innerText = el.innerText === '开启' ? '关闭' : '开启';
+            }
+        }
+
+        // ========== 动画循环 ==========
+        let rotationAngle = 0;
+        let radarWavePhase = 0;
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            rotationAngle += 0.003;
+            radarWavePhase += 0.025;
+
+            camera.x += (camera.targetX - camera.x) * 0.08;
+            camera.y += (camera.targetY - camera.y) * 0.08;
+            camera.zoom += (camera.targetZoom - camera.zoom) * 0.08;
+
+            // 背景渐变
+            let bgGlow = ctx.createRadialGradient(width * 0.5, height * 0.5, 50, width * 0.5, height * 0.5, width * 0.7);
+            bgGlow.addColorStop(0, 'rgba(25, 25, 38, 0.22)');
+            bgGlow.addColorStop(1, 'rgba(3, 3, 5, 0)');
+            ctx.fillStyle = bgGlow;
+            ctx.fillRect(0, 0, width, height);
+
+            // 网格点
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.018)';
+            const gridSize = 64;
+            for (let x = 32; x < width; x += gridSize) {
+                for (let y = 32; y < height; y += gridSize) {
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+
+            // 环境粒子
+            ambientParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+                ctx.fillStyle = `rgba(255, 255, 255, ${focusedNode ? p.alpha * 0.25 : p.alpha})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 节点间连线
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    let dx = nodes[i].worldX - nodes[j].worldX;
+                    let dy = nodes[i].worldY - nodes[j].worldY;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 450) {
+                        let sx1 = (nodes[i].worldX - camera.x) * camera.zoom + width / 2;
+                        let sy1 = (nodes[i].worldY - camera.y) * camera.zoom + height / 2;
+                        let sx2 = (nodes[j].worldX - camera.x) * camera.zoom + width / 2;
+                        let sy2 = (nodes[j].worldY - camera.y) * camera.zoom + height / 2;
+
+                        let isConnectedToHover = (nodes[i] === mouse.hoverNode || nodes[j] === mouse.hoverNode);
+                        let isConnectedToFocused = focusedNode && (nodes[i] === focusedNode || nodes[j] === focusedNode);
+
+                        let lineAlpha = 0.04 * (1 - dist / 450);
+                        if (nodes[i].isCore || nodes[j].isCore) lineAlpha *= 2.2;
+                        if (isConnectedToHover) lineAlpha = 0.3;
+                        if (isConnectedToFocused) lineAlpha = 0.18;
+                        if (focusedNode && !isConnectedToFocused) lineAlpha *= 0.25;
+
+                        ctx.strokeStyle = (isConnectedToHover || isConnectedToFocused) ? 'rgba(255, 255, 255, 0.3)' : `rgba(255, 255, 255, ${lineAlpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(sx1, sy1);
+                        ctx.lineTo(sx2, sy2);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // 控制面板定位
+            if (focusedNode) {
+                const panel = document.getElementById('controlPanel');
+                const panelWidth = 540;
+                const gap = focusedNode.panelOffsetX !== undefined ? focusedNode.panelOffsetX : 35;
+                const verticalOffset = focusedNode.panelOffsetY !== undefined ? focusedNode.panelOffsetY : 0;
+                const panelHeight = panel.scrollHeight || panel.offsetHeight || 460;
+
+                let nodeScreenX = (focusedNode.worldX - camera.x) * camera.zoom + width / 2;
+                let nodeScreenY = (focusedNode.worldY - camera.y) * camera.zoom + height / 2;
+
+                let targetLeft = nodeScreenX + gap;
+                let panelIsOnRight = true;
+                if (targetLeft + panelWidth > width - 30) {
+                    targetLeft = nodeScreenX - panelWidth - gap;
+                    panelIsOnRight = false;
+                }
+                if (targetLeft < 30) {
+                    targetLeft = 30;
+                }
+                activePanelIsOnRight = panelIsOnRight;
+
+                let targetTop = nodeScreenY - panelHeight / 2 + verticalOffset;
+                const minTop = 30;
+                const maxTop = height - panelHeight - 30;
+                if (targetTop > maxTop) targetTop = maxTop;
+                if (targetTop < minTop) targetTop = minTop;
+                if (panelHeight > height - 60) targetTop = minTop;
+
+                panel.style.left = targetLeft + 'px';
+                panel.style.top = targetTop + 'px';
+
+                if (camera.zoom > 2.45 && panel.classList.contains('opacity-0')) {
+                    panel.classList.remove('opacity-0', 'pointer-events-none', 'scale-95', 'translate-y-3');
+                }
+            } else {
+                const panel = document.getElementById('controlPanel');
+                if (!panel.classList.contains('opacity-0')) {
+                    panel.classList.add('opacity-0', 'pointer-events-none', 'scale-95', 'translate-y-3');
+                }
+            }
+
+            // 渲染节点
+            nodes.forEach(node => {
+                if (!node.isCore && !focusedNode) {
+                    node.worldX += node.vx;
+                    node.worldY += node.vy;
+                    if (node.worldX < -width * 0.45 || node.worldX > width * 0.45) node.vx *= -1;
+                    if (node.worldY < -height * 0.45 || node.worldY > height * 0.45) node.vy *= -1;
+                }
+
+                let sx = (node.worldX - camera.x) * camera.zoom + width / 2;
+                let sy = (node.worldY - camera.y) * camera.zoom + height / 2;
+
+                node.breathPhase += node.breathSpeed;
+                let pulse = Math.sin(node.breathPhase);
+
+                let currentRadius = (node.radius + pulse * (node.isCore ? 1.8 : 0.8)) * camera.zoom;
+                let alpha = node.baseAlpha;
+                let isHovered = (node === mouse.hoverNode);
+
+                if (focusedNode && node !== focusedNode) {
+                    alpha = 0.28;
+                } else if (node === focusedNode || isHovered) {
+                    alpha = 1.0;
+                }
+
+                // 核心节点特效
+                if (node.isCore) {
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    let screenSize = Math.min(width, height);
+                    let fieldScale = node.fieldScale || 1;
+                    fieldScale = Math.max(0.4, Math.min(fieldScale, 3.5));
+                    let maxCoreField = (screenSize * 0.45) * camera.zoom * fieldScale;
+
+                    for (let i = 0; i < 4; i++) {
+                        let waveRadius = (45 * camera.zoom) + ((radarWavePhase * 18 + i * 110) % (maxCoreField - 45 * camera.zoom));
+                        let waveAlpha = Math.max(0, (1 - waveRadius / maxCoreField) * 0.22);
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${waveAlpha})`;
+                        ctx.lineWidth = 1.6;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, waveRadius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    ctx.save();
+                    ctx.rotate(rotationAngle);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                    ctx.lineWidth = 12;
+                    ctx.setLineDash([2, 22]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, maxCoreField * 0.65, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.rotate(rotationAngle * 0.6);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                    ctx.lineWidth = 1;
+                    const tickCount = 16;
+                    const tickRadius = maxCoreField * 0.52;
+                    for (let i = 0; i < tickCount; i++) {
+                        let angle = (i / tickCount) * Math.PI * 2;
+                        let x1 = Math.cos(angle) * (tickRadius - 46);
+                        let y1 = Math.sin(angle) * (tickRadius - 46);
+                        let x2 = Math.cos(angle) * tickRadius;
+                        let y2 = Math.sin(angle) * tickRadius;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                    ctx.restore();
+
+                    let coreGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, maxCoreField);
+                    coreGlow.addColorStop(0, `rgba(255, 255, 255, ${0.18 + pulse * 0.08})`);
+                    coreGlow.addColorStop(0.35, `rgba(255, 255, 255, ${0.06 + pulse * 0.02})`);
+                    coreGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = coreGlow;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, maxCoreField, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 聚焦节点特效
+                if (node === focusedNode) {
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    ctx.rotate(rotationAngle);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 6]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 36 * camera.zoom, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    let targetGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 120 * camera.zoom);
+                    targetGlow.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+                    targetGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+                    targetGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = targetGlow;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 120 * camera.zoom, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (!node.isCore) {
+                    const baseGlow = (node.radius || 12) * 1.6;
+                    let glowRadius = isHovered ? Math.max(45, baseGlow * 1.8) * camera.zoom : (baseGlow + pulse * 4) * camera.zoom;
+                    let glowAlpha = isHovered ? 0.15 : 0.04 + pulse * 0.015;
+                    let glowGradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius);
+                    glowGradient.addColorStop(0, `rgba(255, 255, 255, ${glowAlpha})`);
+                    glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = glowGradient;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, glowRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 节点圆点
+                const strokeColor = node === focusedNode ? '#ffffff' : `rgba(230, 230, 240, ${alpha})`;
+                const lineWidth = node === focusedNode ? 2 : 4;
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+                ctx.arc(sx, sy, Math.max(3, currentRadius), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.05})`;
+                ctx.fill();
+                ctx.stroke();
+
+                // 节点标签
+                if (node.isCore) {
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.font = '600 14px Inter, sans-serif';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+                    const coreLabelGap = Math.max(44 * camera.zoom, node.radius + 26 * camera.zoom);
+                    ctx.fillText(node.name, sx, sy - coreLabelGap);
+                    ctx.textBaseline = 'top';
+                    ctx.font = '500 11px JetBrains Mono, monospace';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+                    ctx.fillText('ROOT // 192.168.1.1', sx, sy + (coreLabelGap - 2 * camera.zoom));
+                } else {
+                    let textAlpha = alpha;
+                    if (isHovered && node !== focusedNode) textAlpha = 1.0;
+                    ctx.font = (node === focusedNode || isHovered) ? '500 13px Inter, sans-serif' : '300 12px Inter, sans-serif';
+                    ctx.fillStyle = (node === focusedNode || isHovered) ? 'rgba(255, 255, 255, 0.95)' : `rgba(255, 255, 255, ${textAlpha * 0.8})`;
+                    ctx.textBaseline = 'middle';
+                    const labelGap = Math.max(22, currentRadius + 12 * camera.zoom);
+                    if (node === focusedNode) {
+                        if (activePanelIsOnRight) {
+                            ctx.textAlign = 'right';
+                            ctx.fillText(node.name, sx - labelGap, sy);
+                        } else {
+                            ctx.textAlign = 'left';
+                            ctx.fillText(node.name, sx + labelGap, sy);
+                        }
+                    } else {
+                        ctx.textAlign = 'left';
+                        ctx.fillText(node.name, sx + labelGap, sy);
+                    }
+                }
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        async function init() {
+            await loadDevices();
+            requestAnimationFrame(animate);
+            connectWebSocket();
+        }
+
+        init();
+    </script>
 </body>
 
 </html>
