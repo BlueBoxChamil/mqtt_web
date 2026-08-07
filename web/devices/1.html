@@ -716,11 +716,6 @@
                 }
             }
 
-            let device_info = null;
-            updateDeviceInfo(window.sharedData.device_1_info)
-            if (device_info) {
-                console.log('初始设备信息:', device_info);
-            }
 
             // let deviceName = device_info?.name ?? window._currentPanelNode?.name;
             // if (deviceName) {
@@ -761,6 +756,11 @@
                             console.log('online:', value);
                             updatePanelStatus(value);
                         }
+                        else if (key === 'state') {
+                            console.log('state:', value);
+                            updateUIFromState(value);
+                            currentState = value;
+                        }
                     }
                 }
             }
@@ -770,11 +770,88 @@
             if (bus) {
                 bus.addEventListener('MyDeviceInfoAdvChanged', function (e) {
                     const data = e.detail.MyDeviceInfoAdv;
+                    if (data.id !== 1)
+                        return;
 
-                    console.log('get data.online:', data.online);
-                    updatePanelStatus(data.online);
+                    console.log('请求更新设备信息:', data);
+
+                    if (isValidDeviceData(data, 'online') && data.online !== device_info.online) {
+                        console.log('已更新在线状态:', data.online);
+                        updatePanelStatus(data.online);
+                    }
+
+                    if (isValidDeviceData(data, 'name') && data.name !== device_info.name) {
+                        console.log('已更新设备名字:', data.name);
+                        updateDeviceName(data.name);
+                    }
+
+                    if (isValidDeviceData(data, 'state') && data.state !== currentState) {
+                        currentState = data.state;
+                        console.log('已更新设备state:', data.state);
+                        updateUIFromState(data.state);
+
+                        // 🔽 关键修复：同步清除 pending 状态，防止超时回退
+                        if (togglePending) {
+                            togglePending = false;
+                            toggleTrack.classList.remove('pending');
+                            if (toggleTimer) { clearTimeout(toggleTimer); toggleTimer = null; }
+                            console.log('✅ 通过 MyDeviceInfoAdv 确认开关，pending 解除');
+                        }
+                        if (sliderPending) {
+                            sliderPending = false;
+                            if (sliderTimer) { clearTimeout(sliderTimer); sliderTimer = null; }
+                            console.log('✅ 通过 MyDeviceInfoAdv 确认滑块，pending 解除');
+                        }
+                        // 同步 lastSyncedState，保持一致性
+                        lastSyncedState = { ...currentState };
+                    }
+
                 });
             }
+
+
+
+
+            function isValidDeviceData(data, ...fieldNames) {
+                // 如果第一个参数是数组，则将其展开为字段列表
+                if (fieldNames.length === 1 && Array.isArray(fieldNames[0])) {
+                    fieldNames = fieldNames[0];
+                }
+                // 如果没有任何字段，直接返回 false（或 true 取决于业务）
+                if (fieldNames.length === 0) return false;
+
+                // 检查所有字段是否存在
+                const allExist = fieldNames.every(field => data.hasOwnProperty(field));
+                if (!allExist) return false;
+
+                // 递归检查字段值是否有效（非空）
+                function isValueValid(value) {
+                    if (value === null || value === undefined) return false;
+                    if (typeof value === 'string' && value.trim() === '') return false;
+                    if (typeof value === 'object' && !Array.isArray(value)) {
+                        for (let key in value) {
+                            if (value.hasOwnProperty(key) && !isValueValid(value[key])) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    if (Array.isArray(value)) {
+                        for (let item of value) {
+                            if (!isValueValid(item)) return false;
+                        }
+                        return true;
+                    }
+                    return true;
+                }
+
+                // 对每个必需字段的值进行递归校验
+                for (let field of fieldNames) {
+                    if (!isValueValid(data[field])) return false;
+                }
+                return true;
+            }
+
 
             // ---------- 原有的灯光控制、日志等所有脚本 ----------
             // 以下代码完全复制自原 1.html 的脚本部分，保持功能不变
@@ -967,49 +1044,15 @@
                 console.log('📤 明度已发送:', currentState.l, '，等待确认...');
             });
 
-            // 外部数据同步
-            if (bus) {
-                bus.addEventListener('MyMasAdvChanged', function (e) {
-                    const total_data = e.detail.MyMasAdv;
-                    if (total_data && total_data.id === 1) {
-                        const data = total_data.state;
-                        if (data) {
-                            if (data.light !== undefined) currentState.light = data.light;
-                            if (data.h !== undefined) currentState.h = data.h;
-                            if (data.s !== undefined) currentState.s = data.s;
-                            if (data.l !== undefined) currentState.l = data.l;
-                            if (data.mode !== undefined) currentState.mode = data.mode;
-                            updateUIFromState(currentState);
-                            lastSyncedState = { ...currentState };
 
-                            if (togglePending) {
-                                togglePending = false;
-                                toggleTrack.classList.remove('pending');
-                                if (toggleTimer) { clearTimeout(toggleTimer); toggleTimer = null; }
-                                console.log('✅ 外部确认已收到，开关 pending 解除');
-                            }
-                            if (sliderPending) {
-                                sliderPending = false;
-                                if (sliderTimer) { clearTimeout(sliderTimer); sliderTimer = null; }
-                                console.log('✅ 外部确认已收到，滑块 pending 解除');
-                            }
-                            console.log('📥 外部状态已同步:', currentState);
-                        }
-                    }
-                });
-            }
 
             // 初始化 UI
-            if (window.sharedData && window.sharedData.latestData) {
-                const init = window.sharedData.latestData;
-                if (init.light !== undefined) currentState.light = init.light;
-                if (init.h !== undefined) currentState.h = init.h;
-                if (init.s !== undefined) currentState.s = init.s;
-                if (init.l !== undefined) currentState.l = init.l;
-                if (init.mode !== undefined) currentState.mode = init.mode;
-                lastSyncedState = { ...currentState };
+            let device_info = null;
+            updateDeviceInfo(window.sharedData.device_1_info);
+            if (device_info) {
+                console.log('初始设备信息:', device_info);
             }
-            updateUIFromState(currentState);
+
 
             // 日志脚本（复现原日志功能）
             (function () {
@@ -1090,6 +1133,20 @@
 
                 window._logPanelLog = addLog;
 
+                // 监听 MyDeviceInfoAdvChanged,用于更新log区域显示
+                if (bus) {
+                    bus.addEventListener('MyDeviceInfoAdvChanged', function (e) {
+                        const data = e.detail.MyDeviceInfoAdv;
+                        console.log('日志信息:', data);
+                        if (data.id !== 1)
+                            return;
+                        if (data) {
+                            let display = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+                            addLog('RECE', display);
+                        }
+                    });
+                }
+
                 // 拦截 MySerAdv 赋值
                 (function setupProxy() {
                     const original = window.sharedData || {};
@@ -1116,16 +1173,7 @@
                     });
                 })();
 
-                // 监听 MyMasAdvChanged
-                if (bus) {
-                    bus.addEventListener('MyMasAdvChanged', function (e) {
-                        const data = e.detail.MyMasAdv;
-                        if (data) {
-                            let display = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
-                            addLog('RECE', display);
-                        }
-                    });
-                }
+
 
                 logHeader.addEventListener('click', function (e) {
                     if (e.target.closest('.btn-tool')) return;

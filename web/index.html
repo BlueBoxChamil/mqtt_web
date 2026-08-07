@@ -526,14 +526,7 @@
                 } catch (e) {
                     return;
                 }
-                // if (data.online !== undefined && data.light === undefined) {
-                //     console.log('[WS] 在线状态更新:', data.online === 1 ? '在线' : '离线');
-                //     // return;
-                // }
-                // if (data.mac !== undefined || data.capabilities !== undefined) {
-                //     console.log('[WS] 设备信息:', data);
-                //     // return;
-                // }
+
                 window.sharedData.MyReceiveData = data;
             };
 
@@ -573,31 +566,90 @@
         }
 
         window.sharedData = createReactive({
-            MyReceiveData: null,
-            MySendData: null,
-            MyMasAdv: null,
-            MySerAdv: null,
+            MyReceiveData: null, //网页收到的信息
+            MySerAdv: null, //子设备发出的信息
             MyDeviceInfoAdv: null,//更新除去状态之外的信息
-            device_1_info: null, //这个是保存id1的初始信息的，id2需要另外的参数存储，这个和MyDeviceInfoAdv作用不一样
+            device_1_info: {
+                id: 1,
+                name: null,
+                online: null,
+                capabilities: null,
+                fw_version: null,
+                mac: null,
+                model: null,
+                state: null,
+                type: null,
+            },
+            //这个是保存id1的初始信息的，id2需要另外的参数存储，这个和MyDeviceInfoAdv作用不一样
             //因为如果没有打开子页面却传入了多个设备信息，最开始的信息会丢失
         }, bus);
+
+        const requiredFields = ['name', 'online', 'capabilities', 'fw_version', 'mac', 'model', 'state', 'type'];
+
+        function isValidDeviceData(data, ...fieldNames) {
+            // 如果第一个参数是数组，则将其展开为字段列表
+            if (fieldNames.length === 1 && Array.isArray(fieldNames[0])) {
+                fieldNames = fieldNames[0];
+            }
+            // 如果没有任何字段，直接返回 false（或 true 取决于业务）
+            if (fieldNames.length === 0) return false;
+
+            // 检查所有字段是否存在
+            const allExist = fieldNames.every(field => data.hasOwnProperty(field));
+            if (!allExist) return false;
+
+            // 递归检查字段值是否有效（非空）
+            function isValueValid(value) {
+                if (value === null || value === undefined) return false;
+                if (typeof value === 'string' && value.trim() === '') return false;
+                if (typeof value === 'object' && !Array.isArray(value)) {
+                    for (let key in value) {
+                        if (value.hasOwnProperty(key) && !isValueValid(value[key])) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                if (Array.isArray(value)) {
+                    for (let item of value) {
+                        if (!isValueValid(item)) return false;
+                    }
+                    return true;
+                }
+                return true;
+            }
+
+            // 对每个必需字段的值进行递归校验
+            for (let field of fieldNames) {
+                if (!isValueValid(data[field])) return false;
+            }
+            return true;
+        }
 
         bus.addEventListener('MyReceiveDataChanged', (e) => {
             const data = e.detail.MyReceiveData;
             console.log('主页面收到的数据:', data);
-            if (data && data.id === 1 && data.name !== undefined) {
 
-                window.sharedData.device_1_info = data;
-                console.log('已更新设备信息:', window.sharedData.device_1_info);
+
+            //这里有问题，即使发状态也会进入
+
+            // 这里用于更新页面初始化参数
+            if (data.id === 1) {
+                // 如果存在字段会更新 device_1_info 初始值
+                // device_1_info 是子页面初始值不参与实时更新
+                requiredFields.forEach(field => {
+                    if (isValidDeviceData(data, field)) {
+                        window.sharedData.device_1_info[field] = data[field];
+                        console.log('ddd:', data[field]);
+                    }
+                });
+
             }
 
-            if (data.id === 1 && data.online === 0) {
-                window.sharedData.MyDeviceInfoAdv = data;
-            }
+            // 这里用于实时更新状态数据
+            window.sharedData.MyDeviceInfoAdv = data;
 
-            if (data && data.id === 1) {
-                window.sharedData.MyMasAdv = data;
-            }
+
         });
 
         bus.addEventListener('MySerAdvChanged', (e) => {
