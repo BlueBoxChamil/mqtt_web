@@ -114,6 +114,113 @@
             }
         }
 
+        .light-control-panel .segment {
+            position: relative;
+            height: 42px;
+            padding: 3px;
+            display: flex;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 13px;
+            overflow: hidden;
+        }
+
+        /* ===== 工作模式卡片（完全复制 light-control-panel 样式） ===== */
+        .mode-card {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 16px;
+            padding: 24px 24px 20px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            margin-bottom: 16px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #f0f0f2;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mode-card .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0 0;
+            margin-bottom: 12px;
+        }
+
+        .mode-card .toggle-label-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .mode-card .toggle-label {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: #f0f0f2;
+        }
+
+        .mode-card .segment {
+            position: relative;
+            height: 42px;
+            padding: 3px;
+            display: flex;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 13px;
+            overflow: hidden;
+        }
+
+        .mode-card .segment .slider-indicator {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.08);
+            transition: left 0.15s cubic-bezier(0.22, 1, 0.36, 1), width 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+            /* width 和 left 由 JS 动态设置 */
+        }
+
+        .mode-card .segment .mode-item {
+            flex: 1;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+            color: #8b8f99;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.12s ease;
+            font-weight: 500;
+        }
+
+        .mode-card .segment .mode-item.active {
+            color: #fff;
+        }
+
+        .light-control-panel .segment .mode-item {
+            flex: 1;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+            color: #8b8f99;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.12s ease;
+            font-weight: 500;
+        }
+
+        .light-control-panel .segment .mode-item.active {
+            color: #fff;
+        }
+
+        /* ===== 灯泡等原有样式 ===== */
         .light-control-panel .bulb-wrapper {
             position: relative;
             display: flex;
@@ -230,6 +337,10 @@
             gap: 6px;
         }
 
+        .light-control-panel .control-item.hidden {
+            display: none !important;
+        }
+
         .light-control-panel .control-header {
             display: flex;
             justify-content: space-between;
@@ -284,7 +395,8 @@
                 height: 90px;
             }
 
-            .light-control-panel .toggle-label {
+            .light-control-panel .toggle-label,
+            .mode-card .toggle-label {
                 font-size: 14px;
             }
         }
@@ -466,9 +578,13 @@
         }
 
         .log-panel .badge {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 42px;
             font-size: 10px;
             font-weight: 600;
-            padding: 1px 8px;
+            padding: 1px 0;
             border-radius: 4px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -586,6 +702,21 @@
             <!-- 控制中心 -->
             <div class="space-y-3">
                 <h3 class="text-xs uppercase tracking-widest text-zinc-400 mono font-medium">控制中心</h3>
+                <!-- 工作模式卡片（独立卡片，位于灯光控制上方） -->
+                <!-- 工作模式卡片（独立卡片，位于灯光控制上方） -->
+                <div class="mode-card">
+                    <div class="toggle-row">
+                        <div class="toggle-label-group">
+                            <span class="toggle-label">工作模式</span>
+                        </div>
+                        <!-- 右侧留空 -->
+                    </div>
+                    <div class="segment" id="modeSegment">
+                        <div class="slider-indicator" id="modeSliderIndicator"></div>
+                        <!-- mode-item 由 JS 动态生成 -->
+                    </div>
+                </div>
+
                 <div class="light-control-panel">
 
                     <!-- 灯光开关 -->
@@ -613,26 +744,50 @@
                     <!-- 控制控件 -->
                     <div class="controls-wrap" id="controlsWrap">
                         <div class="controls-inner">
-                            <div class="control-item">
+                            <!-- 亮度滑块（模式 3） -->
+                            <div class="control-item hidden" id="rowBrightness">
                                 <div class="control-header">
-                                    <span>色相 Hue</span>
-                                    <span class="control-val" id="valHue">030°</span>
+                                    <span>亮度 (Brightness)</span>
+                                    <span class="control-val" id="valBrightness">100%</span>
                                 </div>
-                                <input type="range" class="slider" id="sliderHue" min="0" max="360" value="30">
+                                <input type="range" class="slider" id="sliderBrightness" min="0" max="100" value="100">
                             </div>
-                            <div class="control-item">
+                            <!-- 色温滑块（模式 1） -->
+                            <div class="control-item hidden" id="rowWhite">
                                 <div class="control-header">
-                                    <span>饱和度 Saturation</span>
-                                    <span class="control-val" id="valSaturation">75%</span>
+                                    <span>色温 / 白平衡</span>
+                                    <span class="control-val" id="valWhite">125</span>
                                 </div>
-                                <input type="range" class="slider" id="sliderSaturation" min="0" max="100" value="75">
+                                <input type="range" class="slider slider-white" id="sliderWhite" min="0" max="255"
+                                    value="125">
                             </div>
-                            <div class="control-item">
-                                <div class="control-header">
-                                    <span>明度 Lightness</span>
-                                    <span class="control-val" id="valLightness">50%</span>
+                            <!-- HSL 滑块（模式 2） -->
+                            <div class="control-item" id="rowRGB">
+                                <div class="hsl-controls" style="display:flex; flex-direction:column; gap:12px;">
+                                    <div class="control-item" style="gap:6px;">
+                                        <div class="control-header">
+                                            <span>色相 Hue</span>
+                                            <span class="control-val" id="valHue">030°</span>
+                                        </div>
+                                        <input type="range" class="slider" id="sliderHue" min="0" max="360" value="30">
+                                    </div>
+                                    <div class="control-item" style="gap:6px;">
+                                        <div class="control-header">
+                                            <span>饱和度 Saturation</span>
+                                            <span class="control-val" id="valSaturation">75%</span>
+                                        </div>
+                                        <input type="range" class="slider" id="sliderSaturation" min="0" max="100"
+                                            value="75">
+                                    </div>
+                                    <div class="control-item" style="gap:6px;">
+                                        <div class="control-header">
+                                            <span>明度 Lightness</span>
+                                            <span class="control-val" id="valLightness">50%</span>
+                                        </div>
+                                        <input type="range" class="slider" id="sliderLightness" min="0" max="100"
+                                            value="50">
+                                    </div>
                                 </div>
-                                <input type="range" class="slider" id="sliderLightness" min="0" max="100" value="50">
                             </div>
                         </div>
                     </div>
@@ -683,211 +838,61 @@
 
     </div>
 
-    <!-- ===== 设备专属脚本 ===== -->
+    <!-- ===== 设备专属脚本（已重构：逻辑分层，命名统一，去除重复代码） ===== -->
+    <!--
+        通信约定（不可更改，需与外部宿主页面保持一致）：
+        1. 接收设备状态：window.dataBus 派发 'MyDeviceInfoAdvChanged' 事件，
+           数据体位于 e.detail.MyDeviceInfoAdv，其中 id === 1 时为本设备的数据。
+        2. 发送控制指令：写入 window.sharedData.MySerAdv = { id: 1, state: {...} }。
+        3. 共享设备信息缓存：window.sharedData.device_1_info，供本面板初始化及外部读取。
+    -->
     <script>
         (function () {
-            // ---------- 获取节点名称并更新标题 ----------
-            function updateDeviceName(name) {
-                const nameEl = document.getElementById('panelDeviceName');
-                if (nameEl && name) {
-                    nameEl.textContent = name;
-                }
-            }
+            'use strict';
 
-            function updatePanelStatus(online) {
-                const onlineEl = document.getElementById('statusOnline');
-                const offlineEl = document.getElementById('statusOffline');
-                const unknownEl = document.getElementById('statusUnknown');
-                if (!onlineEl || !offlineEl || !unknownEl) return;
+            // =====================================================================
+            // 1. 常量定义
+            // =====================================================================
 
-                // 先全部隐藏
-                onlineEl.classList.add('hidden');
-                offlineEl.classList.add('hidden');
-                unknownEl.classList.add('hidden');
+            // 灯光工作模式编号（与设备通信协议一致，不可更改数值含义）
+            const MODE = { SWITCH: 0, WHITE: 1, RGB: 2, BRIGHTNESS: 3 };
 
-                // 根据状态显示对应的标签
-                if (online === true || online === 1 || online === 'online' || online === 'ONLINE') {
-                    onlineEl.classList.remove('hidden');
-                } else if (online === false || online === 0 || online === 'offline' || online === 'OFFLINE') {
-                    offlineEl.classList.remove('hidden');
-                } else {
-                    // 其他值（null、undefined、'unknown' 等）视为 UNKNOWN
-                    unknownEl.classList.remove('hidden');
-                }
-            }
+            // capability 字符串 -> 模式编号
+            const CAPABILITY_TO_MODE = {
+                switch: MODE.SWITCH,
+                white: MODE.WHITE,
+                rgb: MODE.RGB,
+                brightness: MODE.BRIGHTNESS
+            };
 
+            // 模式在胶囊选择器中的展示顺序
+            const CAPABILITY_ORDER = ['switch', 'brightness', 'white', 'rgb'];
 
-            // let deviceName = device_info?.name ?? window._currentPanelNode?.name;
-            // if (deviceName) {
-            //     updateDeviceName(deviceName);
-            // }
+            // 模式编号 -> 中文展示名
+            const MODE_LABELS = {
+                [MODE.SWITCH]: '开关',
+                [MODE.BRIGHTNESS]: '亮度',
+                [MODE.WHITE]: '色温',
+                [MODE.RGB]: '彩光'
+            };
 
-            // 初始从 window._currentPanelNode 读取
-            if (window._currentPanelNode) {
-                // const node = window._currentPanelNode;
-                // updateDeviceName(node.name);
-                const typeEl = document.getElementById('panelDeviceType');
-                if (typeEl && node.type) {
-                    typeEl.textContent = node.type;
-                }
-                // 状态更新（可简化，因后续数据会覆盖）
-            }
+            const PENDING_TIMEOUT_MS = 5000; // 指令下发后等待设备确认的超时时间
+            const MAX_LOG_COUNT = 50;        // 通信日志最大保留条数
+            const DEVICE_ID = 1;             // 本面板对应的设备 id（对应 device_1_info）
 
-
-            function updateDeviceInfo(data) {
-                if (isValidDeviceData(data, 'online') && data.online !== device_info.online) {
-                    device_info.online = data.online;
-                    console.log('已更新在线状态:', device_info.online);
-                    updatePanelStatus(device_info.online);
-                }
-
-                if (isValidDeviceData(data, 'name') && data.name !== device_info.name) {
-                    device_info.name = data.name;
-                    console.log('已更新设备名字:', device_info.name);
-                    updateDeviceName(device_info.name);
-                }
-
-                if (isValidDeviceData(data, 'state')) {
-                    const ds = data.state;
-                    const devState = device_info.state;
-
-                    if (isValidDeviceData(ds, 'mode') && ds.mode !== devState.mode) {
-                        devState.mode = ds.mode;
-                    }
-                    if (isValidDeviceData(ds, 'light') && ds.light !== devState.light) {
-                        devState.light = ds.light;
-                    }
-                    if (isValidDeviceData(ds, 'brightness') && ds.brightness !== devState.brightness) {
-                        devState.brightness = ds.brightness;
-                    }
-                    if (isValidDeviceData(ds, 'h') &&
-                        isValidDeviceData(ds, 's') &&
-                        isValidDeviceData(ds, 'l')) {
-                        if (ds.h !== devState.h) {
-                            devState.h = ds.h;
-                        }
-                        if (ds.s !== devState.s) {
-                            devState.s = ds.s;
-                        }
-                        if (ds.l !== devState.l) {
-                            devState.l = ds.l;
-                        }
-
-                    }
-                    if (isValidDeviceData(ds, 'white') && ds.white !== devState.white) {
-                        devState.white = ds.white;
-                    }
-                    updateUIFromState(device_info.state);
-                    // 🔽 关键修复：同步清除 pending 状态，防止超时回退
-                    if (togglePending) {
-                        togglePending = false;
-                        toggleTrack.classList.remove('pending');
-                        if (toggleTimer) { clearTimeout(toggleTimer); toggleTimer = null; }
-                        console.log('✅ 通过 MyDeviceInfoAdv 确认开关，pending 解除');
-                    }
-                    if (sliderPending) {
-                        sliderPending = false;
-                        if (sliderTimer) { clearTimeout(sliderTimer); sliderTimer = null; }
-                        console.log('✅ 通过 MyDeviceInfoAdv 确认滑块，pending 解除');
-                    }
-                    // 同步 lastSyncedState，保持一致性
-                    lastSyncedState = { ...device_info.state };
-                }
-
-                window.sharedData.device_1_info = device_info;
-            }
-
-            // 监听共享数据更新名称
-            const bus = window.dataBus;
-            if (bus) {
-                bus.addEventListener('MyDeviceInfoAdvChanged', function (e) {
-                    const data = e.detail.MyDeviceInfoAdv;
-                    if (data.id !== 1)
-                        return;
-
-                    console.log('请求更新设备信息:', data);
-                    updateDeviceInfo(data);
-
-                });
-            }
-
-
-
-
-            function isValidDeviceData(data, ...fieldNames) {
-                // 如果第一个参数是数组，则将其展开为字段列表
-                if (fieldNames.length === 1 && Array.isArray(fieldNames[0])) {
-                    fieldNames = fieldNames[0];
-                }
-                // 如果没有任何字段，直接返回 false（或 true 取决于业务）
-                if (fieldNames.length === 0) return false;
-
-                // 检查所有字段是否存在
-                const allExist = fieldNames.every(field => data.hasOwnProperty(field));
-                if (!allExist) return false;
-
-                // 递归检查字段值是否有效（非空）
-                function isValueValid(value) {
-                    if (value === null || value === undefined) return false;
-                    if (typeof value === 'string' && value.trim() === '') return false;
-                    if (typeof value === 'object' && !Array.isArray(value)) {
-                        for (let key in value) {
-                            if (value.hasOwnProperty(key) && !isValueValid(value[key])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    if (Array.isArray(value)) {
-                        for (let item of value) {
-                            if (!isValueValid(item)) return false;
-                        }
-                        return true;
-                    }
-                    return true;
-                }
-
-                // 对每个必需字段的值进行递归校验
-                for (let field of fieldNames) {
-                    if (!isValueValid(data[field])) return false;
-                }
-                return true;
-            }
-
-
-            // ---------- 原有的灯光控制、日志等所有脚本 ----------
-            // 以下代码完全复制自原 1.html 的脚本部分，保持功能不变
-            // 注意：由于现在整个面板都在子页面内，这些脚本依然有效
-
-            const toggleTrack = document.getElementById('lightToggle');
-            const toggleSublabel = document.getElementById('toggleSublabel');
-            const dot = document.getElementById('rgbColorDot');
-            const hexReadout = document.getElementById('rgbHexReadout');
-            const glow = document.getElementById('bulbGlow');
-            const controlsWrap = document.getElementById('controlsWrap');
-
-            const sliderHue = document.getElementById('sliderHue');
-            const sliderSat = document.getElementById('sliderSaturation');
-            const sliderLight = document.getElementById('sliderLightness');
-            const valHue = document.getElementById('valHue');
-            const valSat = document.getElementById('valSaturation');
-            const valLight = document.getElementById('valLightness');
-
-            // 状态
-            let lastSyncedState = {
+            const DEFAULT_STATE = {
                 light: 1,
-                mode: 2,
+                mode: MODE.SWITCH,
                 h: 30,
                 s: 75,
                 l: 50,
                 brightness: 100,
                 white: 125
             };
-            let togglePending = false;
-            let toggleTimer = null;
-            let sliderPending = false;
-            let sliderTimer = null;
-            let sliderRevertState = null;
+
+            // =====================================================================
+            // 2. 颜色计算工具
+            // =====================================================================
 
             function hslToHex(h, s, l) {
                 s /= 100;
@@ -901,162 +906,111 @@
                 return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
             }
 
-            function updateUIFromState(state) {
-                const isOn = state.light === 1;
-                toggleTrack.classList.toggle('checked', isOn);
-                toggleTrack.setAttribute('aria-checked', String(isOn));
-                toggleSublabel.textContent = isOn ? '已开启' : '已关闭';
-
-                sliderHue.value = state.h;
-                sliderSat.value = state.s;
-                sliderLight.value = state.l;
-                valHue.textContent = String(state.h).padStart(3, '0') + '°';
-                valSat.textContent = state.s + '%';
-                valLight.textContent = state.l + '%';
-
-                const hex = hslToHex(state.h, state.s, state.l);
-                hexReadout.textContent = hex;
-                dot.style.backgroundColor = hex;
-                dot.style.boxShadow = `0 0 80px ${hex}80`;
-                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
-
-                dot.classList.toggle('light-off', !isOn);
-                glow.classList.toggle('light-off', !isOn);
-                controlsWrap.classList.toggle('disabled', !isOn);
+            function hexToRgb(hex) {
+                const n = parseInt(hex.slice(1), 16);
+                return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
             }
 
-            function sendState(state) {
-                if (window.sharedData) {
-                    const devState = device_info.state;
-                    const payload = {
-                        id: 1,
-                        state: {
-                            light: devState.light,
-                            mode: devState.mode,
-                            h: devState.h,
-                            s: devState.s,
-                            l: devState.l,
-                            brightness: devState.brightness,
-                            white: devState.white
-                        },
-                    };
-                    window.sharedData.MySerAdv = payload;
+            function rgbToHsl(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                if (max === min) {
+                    h = s = 0;
                 } else {
-                    console.warn('sharedData 不可用，无法发送状态');
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                        case g: h = ((b - r) / d + 2) / 6; break;
+                        case b: h = ((r - g) / d + 4) / 6; break;
+                    }
+                }
+                return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+            }
+
+            // 色温（white 0~255）线性插值：暖橙 -> 白 -> 冷蓝
+            function whiteToHsl(white) {
+                const stops = [
+                    { r: 255, g: 158, b: 68 },
+                    { r: 255, g: 255, b: 255 },
+                    { r: 163, g: 201, b: 255 }
+                ];
+                const t = white / 255;
+                const [from, to, ratio] = t <= 0.5
+                    ? [stops[0], stops[1], t / 0.5]
+                    : [stops[1], stops[2], (t - 0.5) / 0.5];
+                const r = Math.round(from.r + (to.r - from.r) * ratio);
+                const g = Math.round(from.g + (to.g - from.g) * ratio);
+                const b = Math.round(from.b + (to.b - from.b) * ratio);
+                return rgbToHsl(r, g, b);
+            }
+
+            // 根据当前模式与状态，计算灯泡应显示的 HSL 颜色
+            function computeBulbColor(state) {
+                const { mode, brightness, white, h, s, l } = state;
+                switch (mode) {
+                    case MODE.SWITCH:
+                        return { h: 0, s: 0, l: 100 };
+                    case MODE.WHITE:
+                        return whiteToHsl(white);
+                    case MODE.RGB:
+                        return { h, s, l };
+                    case MODE.BRIGHTNESS:
+                        return { h: 0, s: 0, l: brightness };
+                    default:
+                        return { h: 0, s: 0, l: 100 };
                 }
             }
 
-            toggleTrack.addEventListener('click', function (e) {
-                if (togglePending) {
-                    console.log('⏳ 开关等待确认中，忽略本次点击');
-                    return;
-                }
-                const devState = device_info.state;
-                lastSyncedState = { ...devState };
-                const newLight = devState.light === 1 ? 0 : 1;
-                togglePending = true;
-                this.classList.add('pending');
-                devState.light = newLight;
-                sendState(devState);
+            // =====================================================================
+            // 3. DOM 引用
+            // =====================================================================
 
-                if (toggleTimer) clearTimeout(toggleTimer);
-                toggleTimer = setTimeout(() => {
-                    if (togglePending) {
-                        togglePending = false;
-                        toggleTrack.classList.remove('pending');
-                        devState = { ...lastSyncedState };
-                        updateUIFromState(devState);
-                        console.warn('⏰ 开关超时，回退到之前状态');
-                    }
-                }, 5000);
-                console.log('📤 开关指令已发送（新状态:', newLight, '），等待确认...');
-            });
+            const dom = {
+                toggleTrack: document.getElementById('lightToggle'),
+                toggleSublabel: document.getElementById('toggleSublabel'),
+                bulbDot: document.getElementById('rgbColorDot'),
+                bulbHex: document.getElementById('rgbHexReadout'),
+                bulbGlow: document.getElementById('bulbGlow'),
+                controlsWrap: document.getElementById('controlsWrap'),
 
-            sliderHue.addEventListener('input', function () {
-                const devState = device_info.state;
-                devState.h = parseInt(this.value);
-                valHue.textContent = String(devState.h).padStart(3, '0') + '°';
-                const hex = hslToHex(devState.h, devState.s, devState.l);
-                hexReadout.textContent = hex;
-                dot.style.backgroundColor = hex;
-                dot.style.boxShadow = `0 0 80px ${hex}80`;
-                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
-            });
-            sliderHue.addEventListener('change', function () {
-                const devState = device_info.state;
-                if (sliderPending) { clearTimeout(sliderTimer); sliderPending = false; }
-                sliderRevertState = { ...lastSyncedState };
-                sendState(devState);
-                sliderPending = true;
-                sliderTimer = setTimeout(() => {
-                    if (sliderPending) {
-                        sliderPending = false;
-                        devState = { ...sliderRevertState };
-                        updateUIFromState(devState);
-                        console.warn('⏰ 滑块超时，回退到之前状态');
-                    }
-                }, 5000);
-                console.log('📤 色相已发送:', devState.h, '，等待确认...');
-            });
+                rowBrightness: document.getElementById('rowBrightness'),
+                rowWhite: document.getElementById('rowWhite'),
+                rowRGB: document.getElementById('rowRGB'),
 
-            sliderSat.addEventListener('input', function () {
-                const devState = device_info.state;
-                devState.s = parseInt(this.value);
-                valSat.textContent = devState.s + '%';
-                const hex = hslToHex(devState.h, devState.s, devState.l);
-                hexReadout.textContent = hex;
-                dot.style.backgroundColor = hex;
-                dot.style.boxShadow = `0 0 80px ${hex}80`;
-                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
-            });
-            sliderSat.addEventListener('change', function () {
-                const devState = device_info.state;
-                if (sliderPending) { clearTimeout(sliderTimer); sliderPending = false; }
-                sliderRevertState = { ...lastSyncedState };
-                sendState(devState);
-                sliderPending = true;
-                sliderTimer = setTimeout(() => {
-                    if (sliderPending) {
-                        sliderPending = false;
-                        devState = { ...sliderRevertState };
-                        updateUIFromState(devState);
-                        console.warn('⏰ 滑块超时，回退到之前状态');
-                    }
-                }, 5000);
-                console.log('📤 饱和度已发送:', devState.s, '，等待确认...');
-            });
+                sliderBrightness: document.getElementById('sliderBrightness'),
+                valBrightness: document.getElementById('valBrightness'),
+                sliderWhite: document.getElementById('sliderWhite'),
+                valWhite: document.getElementById('valWhite'),
+                sliderHue: document.getElementById('sliderHue'),
+                valHue: document.getElementById('valHue'),
+                sliderSaturation: document.getElementById('sliderSaturation'),
+                valSaturation: document.getElementById('valSaturation'),
+                sliderLightness: document.getElementById('sliderLightness'),
+                valLightness: document.getElementById('valLightness'),
 
-            sliderLight.addEventListener('input', function () {
-                const devState = device_info.state;
-                devState.l = parseInt(this.value);
-                valLight.textContent = devState.l + '%';
-                const hex = hslToHex(devState.h, devState.s, devState.l);
-                hexReadout.textContent = hex;
-                dot.style.backgroundColor = hex;
-                dot.style.boxShadow = `0 0 80px ${hex}80`;
-                glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
-            });
-            sliderLight.addEventListener('change', function () {
-                const devState = device_info.state;
-                if (sliderPending) { clearTimeout(sliderTimer); sliderPending = false; }
-                sliderRevertState = { ...lastSyncedState };
-                sendState(devState);
-                sliderPending = true;
-                sliderTimer = setTimeout(() => {
-                    if (sliderPending) {
-                        sliderPending = false;
-                        devState = { ...sliderRevertState };
-                        updateUIFromState(devState);
-                        console.warn('⏰ 滑块超时，回退到之前状态');
-                    }
-                }, 5000);
-                console.log('📤 明度已发送:', devState.l, '，等待确认...');
-            });
+                modeSegment: document.getElementById('modeSegment'),
+                modeSliderIndicator: document.getElementById('modeSliderIndicator'),
 
+                panelDeviceName: document.getElementById('panelDeviceName'),
+                statusOnline: document.getElementById('statusOnline'),
+                statusOffline: document.getElementById('statusOffline'),
+                statusUnknown: document.getElementById('statusUnknown'),
 
+                logEl: document.getElementById('log'),
+                logCountEl: document.getElementById('logCount'),
+                logPanel: document.getElementById('logPanel'),
+                logHeader: document.getElementById('logHeader'),
+                btnClearLog: document.getElementById('btnClearLog'),
+                btnCopyLog: document.getElementById('btnCopyLog')
+            };
 
-            // 初始化 UI
-            let device_info = {
+            // =====================================================================
+            // 4. 设备状态（本地模型）
+            // =====================================================================
+
+            const deviceInfo = {
                 id: 0,
                 name: null,
                 online: null,
@@ -1064,128 +1018,188 @@
                 fw_version: null,
                 mac: null,
                 model: null,
-                state: {
-                    light: 1,
-                    mode: 2,
-                    h: 30,
-                    s: 75,
-                    l: 50,
-                    brightness: 100,
-                    white: 125
-                },
                 type: null,
+                state: { ...DEFAULT_STATE }
             };
-            updateDeviceInfo(window.sharedData.device_1_info);
-            if (device_info) {
-                console.log('初始设备信息:', device_info);
-            }
 
+            // 指令下发后的"乐观更新 + 超时回退"状态机
+            // kind: 'toggle' | 'slider'（模式切换复用 slider 的回退逻辑）
+            const pending = {
+                toggle: { active: false, timer: null },
+                slider: { active: false, timer: null, revertState: null }
+            };
 
-            // 日志脚本（复现原日志功能）
-            (function () {
-                const MAX_LOG_COUNT = 50;
+            // =====================================================================
+            // 5. 通信日志模块
+            // =====================================================================
+
+            const logModule = (function () {
                 let rawLogs = [];
                 let currentFilter = 'ALL';
 
-                const logEl = document.getElementById('log');
-                const logCountEl = document.getElementById('logCount');
-                const logPanel = document.getElementById('logPanel');
-                const logHeader = document.getElementById('logHeader');
+                dom.logPanel.classList.remove('open');
 
-                logPanel.classList.remove('open');
-
-                function renderLogs() {
-                    logEl.innerHTML = '';
-                    const filtered = rawLogs.filter(item => currentFilter === 'ALL' || item.type === currentFilter);
-                    filtered.forEach(item => {
-                        const line = document.createElement('div');
-                        line.className = 'log-line';
-                        const timeSpan = document.createElement('span');
-                        timeSpan.className = 'log-time';
-                        timeSpan.textContent = item.time;
-                        const badge = document.createElement('span');
-                        badge.className = 'badge badge-' + item.type;
-                        badge.textContent = item.type;
-                        const content = document.createElement('span');
-                        content.className = 'log-content';
-                        let displayMsg = item.msg;
-                        displayMsg = displayMsg.replace(/(\{[\s\S]*\})/g, '<span class="log-data">$1</span>');
-                        content.innerHTML = displayMsg;
-                        line.appendChild(timeSpan);
-                        line.appendChild(badge);
-                        line.appendChild(content);
-                        logEl.appendChild(line);
-                    });
-                    logEl.scrollTop = logEl.scrollHeight;
-                    logCountEl.textContent = rawLogs.length;
+                function formatMessage(msg) {
+                    return msg.replace(/(\{[\s\S]*\})/g, '<span class="log-data">$1</span>');
                 }
 
-                function addLog(type, msg) {
-                    const now = new Date();
-                    const time = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
-                    const item = { time, type, msg };
-                    rawLogs.push(item);
-                    if (rawLogs.length > MAX_LOG_COUNT) rawLogs.shift();
-                    if (currentFilter === 'ALL' || currentFilter === type) {
-                        appendLogItem(item);
-                    } else {
-                        renderLogs();
-                    }
-                    logCountEl.textContent = rawLogs.length;
-                }
-
-                function appendLogItem(item) {
+                function createLogLineEl(item) {
                     const line = document.createElement('div');
                     line.className = 'log-line';
+
                     const timeSpan = document.createElement('span');
                     timeSpan.className = 'log-time';
                     timeSpan.textContent = item.time;
+
                     const badge = document.createElement('span');
                     badge.className = 'badge badge-' + item.type;
                     badge.textContent = item.type;
+
                     const content = document.createElement('span');
                     content.className = 'log-content';
-                    let displayMsg = item.msg;
-                    displayMsg = displayMsg.replace(/(\{[\s\S]*\})/g, '<span class="log-data">$1</span>');
-                    content.innerHTML = displayMsg;
+                    content.innerHTML = formatMessage(item.msg);
+
                     line.appendChild(timeSpan);
                     line.appendChild(badge);
                     line.appendChild(content);
-                    logEl.appendChild(line);
-                    while (logEl.children.length > MAX_LOG_COUNT) {
-                        logEl.removeChild(logEl.firstChild);
+                    return line;
+                }
+
+                function renderAll() {
+                    dom.logEl.innerHTML = '';
+                    rawLogs
+                        .filter(item => currentFilter === 'ALL' || item.type === currentFilter)
+                        .forEach(item => dom.logEl.appendChild(createLogLineEl(item)));
+                    dom.logEl.scrollTop = dom.logEl.scrollHeight;
+                    dom.logCountEl.textContent = rawLogs.length;
+                }
+
+                function appendOne(item) {
+                    dom.logEl.appendChild(createLogLineEl(item));
+                    while (dom.logEl.children.length > MAX_LOG_COUNT) {
+                        dom.logEl.removeChild(dom.logEl.firstChild);
                     }
-                    logEl.scrollTop = logEl.scrollHeight;
+                    dom.logEl.scrollTop = dom.logEl.scrollHeight;
                 }
 
-                window._logPanelLog = addLog;
+                function add(type, msg) {
+                    const now = new Date();
+                    const time = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+                    const item = { time, type, msg };
 
-                // 监听 MyDeviceInfoAdvChanged,用于更新log区域显示
-                if (bus) {
-                    bus.addEventListener('MyDeviceInfoAdvChanged', function (e) {
-                        const data = e.detail.MyDeviceInfoAdv;
-                        console.log('日志信息:', data);
-                        if (data.id !== 1)
-                            return;
-                        if (data) {
-                            let display = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
-                            addLog('RECE', display);
-                        }
+                    rawLogs.push(item);
+                    if (rawLogs.length > MAX_LOG_COUNT) rawLogs.shift();
+
+                    if (currentFilter === 'ALL' || currentFilter === type) {
+                        appendOne(item);
+                    } else {
+                        renderAll();
+                    }
+                    dom.logCountEl.textContent = rawLogs.length;
+                }
+
+                function clear() {
+                    rawLogs = [];
+                    renderAll();
+                }
+
+                function setFilter(filter) {
+                    currentFilter = filter;
+                    renderAll();
+                }
+
+                function exportAsText() {
+                    return rawLogs.map(i => `[${i.time}] [${i.type}] ${i.msg}`).join('\n');
+                }
+
+                // ---- 事件绑定 ----
+                dom.logHeader.addEventListener('click', function (e) {
+                    if (e.target.closest('.btn-tool')) return;
+                    dom.logPanel.classList.toggle('open');
+                });
+
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        setFilter(this.dataset.filter);
                     });
+                });
+
+                dom.btnClearLog.addEventListener('click', clear);
+
+                // 兼容降级：优先使用 Clipboard API，不可用时回退到 execCommand
+                function copyTextFallback(text) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    textarea.style.top = '0';
+                    textarea.style.left = '0';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    let ok = false;
+                    try {
+                        ok = document.execCommand('copy');
+                    } catch (err) {
+                        ok = false;
+                    }
+                    document.body.removeChild(textarea);
+                    return ok;
                 }
 
-                // 拦截 MySerAdv 赋值
-                (function setupProxy() {
-                    const original = window.sharedData || {};
+                dom.btnCopyLog.addEventListener('click', async function () {
+                    const text = exportAsText();
+                    try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(text);
+                            add('INFO', '日志已复制到剪贴板');
+                        } else if (copyTextFallback(text)) {
+                            add('INFO', '日志已复制到剪贴板');
+                        } else {
+                            add('INFO', '当前环境不支持复制到剪贴板');
+                        }
+                    } catch (e) {
+                        // Clipboard API 失败（如非安全上下文）时再尝试一次降级方案
+                        if (copyTextFallback(text)) {
+                            add('INFO', '日志已复制到剪贴板');
+                        } else {
+                            add('INFO', '复制失败: ' + e.message);
+                        }
+                    }
+                });
+
+                return { add };
+            })();
+
+            // 暴露给外部（例如宿主页面）追加日志的入口，保持原有全局钩子名
+            window._logPanelLog = logModule.add;
+
+            // =====================================================================
+            // 6. sharedData 代理：拦截 MySerAdv 赋值以自动记录 SEND 日志
+            //    （通信通道名 sharedData / MySerAdv 属于外部约定，不可更改）
+            // =====================================================================
+
+            (function setupSharedDataLogProxy() {
+                const original = window.sharedData || {};
+
+                // 部分老旧 WebView（如低版本 Android System WebView）不支持 Proxy，
+                // 此时降级为普通对象，跳过自动 SEND 日志拦截，但不影响通信本身。
+                if (typeof Proxy === 'undefined' || typeof Object.defineProperty !== 'function') {
+                    window.sharedData = original;
+                    console.warn('当前环境不支持 Proxy，SEND 日志自动记录功能不可用');
+                    return;
+                }
+
+                try {
                     const handler = {
                         set(target, prop, value) {
                             if (prop === 'MySerAdv') {
-                                let display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
-                                addLog('SEND', display);
-                                target[prop] = value;
-                            } else {
-                                target[prop] = value;
+                                const display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+                                logModule.add('SEND', display);
                             }
+                            target[prop] = value;
                             return true;
                         },
                         get(target, prop) {
@@ -1195,46 +1209,473 @@
                     const proxy = new Proxy(original, handler);
                     Object.defineProperty(window, 'sharedData', {
                         get: function () { return proxy; },
-                        set: function (val) { console.warn('sharedData 被重新赋值，忽略'); },
+                        set: function () { console.warn('sharedData 被重新赋值，忽略'); },
                         configurable: true
                     });
-                })();
-
-
-
-                logHeader.addEventListener('click', function (e) {
-                    if (e.target.closest('.btn-tool')) return;
-                    logPanel.classList.toggle('open');
-                });
-
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                        currentFilter = this.dataset.filter;
-                        renderLogs();
-                    });
-                });
-
-                document.getElementById('btnClearLog').addEventListener('click', function () {
-                    rawLogs = [];
-                    renderLogs();
-                });
-
-                document.getElementById('btnCopyLog').addEventListener('click', async function () {
-                    const text = rawLogs.map(i => `[${i.time}] [${i.type}] ${i.msg}`).join('\n');
-                    try {
-                        await navigator.clipboard.writeText(text);
-                        addLog('INFO', '日志已复制到剪贴板');
-                    } catch (e) {
-                        addLog('INFO', '复制失败: ' + e.message);
-                    }
-                });
-
-                addLog('INFO', '日志系统已启动，等待通信数据...');
+                } catch (err) {
+                    // defineProperty 失败（例如已被其他脚本定义为不可配置属性）时优雅降级
+                    console.warn('sharedData 代理设置失败，回退为普通对象:', err);
+                    window.sharedData = original;
+                }
             })();
 
-            console.log('✅ Matrix Core 控制器已启动');
+            // =====================================================================
+            // 7. 模式胶囊（segmented control）渲染
+            // =====================================================================
+
+            function normalizeCapabilities(capabilities) {
+                if (Array.isArray(capabilities)) return capabilities;
+                if (typeof capabilities === 'string') return capabilities.split(',').map(s => s.trim());
+                return ['switch'];
+            }
+
+            function buildModeItems(capabilities) {
+                const capsArray = normalizeCapabilities(capabilities);
+                const available = CAPABILITY_ORDER.filter(key => capsArray.includes(key));
+                if (available.length === 0) available.push('switch');
+
+                // 清空现有 item（保留 indicator）
+                dom.modeSegment.querySelectorAll('.mode-item').forEach(el => el.remove());
+
+                available.forEach(key => {
+                    const modeNum = CAPABILITY_TO_MODE[key];
+                    const item = document.createElement('div');
+                    item.className = 'mode-item';
+                    item.dataset.mode = modeNum;
+                    item.textContent = MODE_LABELS[modeNum];
+                    item.addEventListener('click', function () {
+                        const newMode = parseInt(this.dataset.mode, 10);
+                        if (newMode !== deviceInfo.state.mode) {
+                            deviceInfo.state.mode = newMode;
+                            updateUIFromState(deviceInfo.state);
+                            sendState('mode');
+                        }
+                    });
+                    dom.modeSegment.appendChild(item);
+                });
+            }
+
+            // 兼容极少数不支持 requestAnimationFrame 的环境
+            const scheduleFrame = typeof requestAnimationFrame === 'function'
+                ? requestAnimationFrame
+                : (cb) => setTimeout(cb, 16);
+
+            function updateIndicatorPosition(activeIndex) {
+                const items = dom.modeSegment.querySelectorAll('.mode-item');
+                if (!items.length || activeIndex >= items.length) return;
+
+                scheduleFrame(() => {
+                    const segWidth = dom.modeSegment.clientWidth;
+                    if (segWidth === 0) {
+                        setTimeout(() => updateIndicatorPosition(activeIndex), 50);
+                        return;
+                    }
+                    const gap = 6;
+                    const itemWidth = (segWidth - gap) / items.length;
+                    dom.modeSliderIndicator.style.width = (itemWidth - 2) + 'px';
+                    dom.modeSliderIndicator.style.left = (3 + activeIndex * itemWidth) + 'px';
+                });
+            }
+
+            function highlightMode(modeNum) {
+                const items = dom.modeSegment.querySelectorAll('.mode-item');
+                let activeIndex = -1;
+                items.forEach((item, index) => {
+                    const isActive = parseInt(item.dataset.mode, 10) === modeNum;
+                    item.classList.toggle('active', isActive);
+                    if (isActive) activeIndex = index;
+                });
+                // 未找到匹配项时，默认高亮第一个
+                if (activeIndex === -1 && items.length > 0) {
+                    items[0].classList.add('active');
+                    activeIndex = 0;
+                }
+                if (activeIndex !== -1) updateIndicatorPosition(activeIndex);
+            }
+
+            // =====================================================================
+            // 8. 灯泡颜色渲染
+            // =====================================================================
+
+            function paintBulb(hslColor) {
+                const hex = hslToHex(hslColor.h, hslColor.s, hslColor.l);
+                const [r, g, b] = hexToRgb(hex);
+                dom.bulbHex.textContent = hex;
+                dom.bulbDot.style.backgroundColor = hex;
+                dom.bulbDot.style.boxShadow = `0 0 80px rgba(${r},${g},${b},0.6)`;
+                dom.bulbGlow.style.background = `radial-gradient(circle, rgba(${r},${g},${b},0.18), transparent 55%)`;
+            }
+
+            // 滑块拖动过程中的实时预览：仅在预览的字段属于当前模式时生效
+            function previewBulbIfRelevant(mode, overrideField, overrideValue) {
+                if (deviceInfo.state.mode !== mode) return;
+                const previewState = { ...deviceInfo.state, [overrideField]: overrideValue };
+                paintBulb(computeBulbColor(previewState));
+            }
+
+            // =====================================================================
+            // 9. 控件可见性 & 整体 UI 刷新
+            // =====================================================================
+
+            function updateControlsVisibility(mode, lightOn) {
+                dom.controlsWrap.classList.toggle('disabled', !lightOn);
+
+                dom.rowBrightness.classList.toggle('hidden', mode !== MODE.BRIGHTNESS);
+                dom.rowWhite.classList.toggle('hidden', mode !== MODE.WHITE);
+                dom.rowRGB.classList.toggle('hidden', mode !== MODE.RGB);
+            }
+
+            function updateUIFromState(state) {
+                const isOn = state.light === 1;
+
+                // 开关
+                dom.toggleTrack.classList.toggle('checked', isOn);
+                dom.toggleTrack.setAttribute('aria-checked', String(isOn));
+                dom.toggleSublabel.textContent = isOn ? '已开启' : '已关闭';
+
+                // 灯泡显隐 + 颜色
+                dom.bulbDot.classList.toggle('light-off', !isOn);
+                dom.bulbGlow.classList.toggle('light-off', !isOn);
+                paintBulb(computeBulbColor(state));
+
+                // 滑块数值
+                dom.sliderBrightness.value = state.brightness;
+                dom.valBrightness.textContent = `${state.brightness}%`;
+                dom.sliderWhite.value = state.white;
+                dom.valWhite.textContent = state.white;
+                dom.sliderHue.value = state.h;
+                dom.valHue.textContent = String(state.h).padStart(3, '0') + '°';
+                dom.sliderSaturation.value = state.s;
+                dom.valSaturation.textContent = `${state.s}%`;
+                dom.sliderLightness.value = state.l;
+                dom.valLightness.textContent = `${state.l}%`;
+
+                // 模式胶囊 & 控件可见性
+                highlightMode(state.mode);
+                updateControlsVisibility(state.mode, isOn);
+            }
+
+            function updateDeviceName(name) {
+                if (dom.panelDeviceName && name) {
+                    dom.panelDeviceName.textContent = name;
+                }
+            }
+
+            function updatePanelStatus(online) {
+                if (!dom.statusOnline || !dom.statusOffline || !dom.statusUnknown) return;
+                dom.statusOnline.classList.add('hidden');
+                dom.statusOffline.classList.add('hidden');
+                dom.statusUnknown.classList.add('hidden');
+
+                if (online === true || online === 1 || online === 'online' || online === 'ONLINE') {
+                    dom.statusOnline.classList.remove('hidden');
+                } else if (online === false || online === 0 || online === 'offline' || online === 'OFFLINE') {
+                    dom.statusOffline.classList.remove('hidden');
+                } else {
+                    dom.statusUnknown.classList.remove('hidden');
+                }
+            }
+
+            // =====================================================================
+            // 10. 指令下发（乐观更新 + 超时回退）
+            // =====================================================================
+
+            function clearPendingToggle() {
+                pending.toggle.active = false;
+                dom.toggleTrack.classList.remove('pending');
+                if (pending.toggle.timer) {
+                    clearTimeout(pending.toggle.timer);
+                    pending.toggle.timer = null;
+                }
+            }
+
+            function clearPendingSlider() {
+                pending.slider.active = false;
+                if (pending.slider.timer) {
+                    clearTimeout(pending.slider.timer);
+                    pending.slider.timer = null;
+                }
+            }
+
+            function revertToggleOnTimeout(revertState) {
+                pending.toggle.timer = setTimeout(() => {
+                    if (!pending.toggle.active) return;
+                    clearPendingToggle();
+                    deviceInfo.state = { ...revertState };
+                    updateUIFromState(deviceInfo.state);
+                    console.warn('⏰ 开关超时，回退到之前状态');
+                    logModule.add('INFO', '开关超时，回退');
+                }, PENDING_TIMEOUT_MS);
+            }
+
+            function revertSliderOnTimeout(revertState, timeoutLogMsg) {
+                pending.slider.timer = setTimeout(() => {
+                    if (!pending.slider.active) return;
+                    clearPendingSlider();
+                    deviceInfo.state = { ...revertState };
+                    updateUIFromState(deviceInfo.state);
+                    console.warn('⏰ ' + timeoutLogMsg);
+                    logModule.add('INFO', timeoutLogMsg);
+                }, PENDING_TIMEOUT_MS);
+            }
+
+            // cause: 'toggle' | 'slider' | 'mode'
+            function sendState(cause) {
+                const revertState = { ...deviceInfo.state };
+
+                if (cause === 'toggle') {
+                    if (pending.toggle.active) return; // 已有指令在途，忽略
+                    pending.toggle.active = true;
+                    dom.toggleTrack.classList.add('pending');
+                    clearTimeout(pending.toggle.timer);
+                    revertToggleOnTimeout(revertState);
+                } else {
+                    // 滑块 / 模式切换共用同一套回退机制
+                    clearPendingSlider();
+                    pending.slider.active = true;
+                    pending.slider.revertState = revertState;
+                    const timeoutMsg = cause === 'mode' ? '模式切换超时，回退' : '滑块超时，回退';
+                    revertSliderOnTimeout(revertState, timeoutMsg);
+                }
+
+                const payload = {
+                    id: DEVICE_ID,
+                    state: {
+                        light: deviceInfo.state.light,
+                        mode: deviceInfo.state.mode,
+                        h: deviceInfo.state.h,
+                        s: deviceInfo.state.s,
+                        l: deviceInfo.state.l,
+                        brightness: deviceInfo.state.brightness,
+                        white: deviceInfo.state.white
+                    }
+                };
+
+                if (window.sharedData) {
+                    window.sharedData.MySerAdv = payload; // 触发上面的日志代理记录 SEND
+                    console.log('📤 发送指令:', payload);
+                } else {
+                    console.warn('sharedData 不可用');
+                }
+            }
+
+            // =====================================================================
+            // 11. 用户交互事件绑定
+            // =====================================================================
+
+            dom.toggleTrack.addEventListener('click', function () {
+                if (pending.toggle.active) {
+                    console.log('⏳ 开关等待确认中，忽略本次点击');
+                    return;
+                }
+                deviceInfo.state.light = deviceInfo.state.light === 1 ? 0 : 1;
+                updateUIFromState(deviceInfo.state); // 乐观更新
+                sendState('toggle');
+            });
+
+            // 亮度滑块
+            dom.sliderBrightness.addEventListener('input', function () {
+                const val = parseInt(this.value, 10);
+                dom.valBrightness.textContent = `${val}%`;
+                previewBulbIfRelevant(MODE.BRIGHTNESS, 'brightness', val);
+            });
+            dom.sliderBrightness.addEventListener('change', function () {
+                deviceInfo.state.brightness = parseInt(this.value, 10);
+                sendState('slider');
+            });
+
+            // 色温滑块
+            dom.sliderWhite.addEventListener('input', function () {
+                const val = parseInt(this.value, 10);
+                dom.valWhite.textContent = val;
+                previewBulbIfRelevant(MODE.WHITE, 'white', val);
+            });
+            dom.sliderWhite.addEventListener('change', function () {
+                deviceInfo.state.white = parseInt(this.value, 10);
+                sendState('slider');
+            });
+
+            // 色相滑块
+            dom.sliderHue.addEventListener('input', function () {
+                const val = parseInt(this.value, 10);
+                dom.valHue.textContent = String(val).padStart(3, '0') + '°';
+                previewBulbIfRelevant(MODE.RGB, 'h', val);
+            });
+            dom.sliderHue.addEventListener('change', function () {
+                deviceInfo.state.h = parseInt(this.value, 10);
+                sendState('slider');
+            });
+
+            // 饱和度滑块
+            dom.sliderSaturation.addEventListener('input', function () {
+                const val = parseInt(this.value, 10);
+                dom.valSaturation.textContent = `${val}%`;
+                previewBulbIfRelevant(MODE.RGB, 's', val);
+            });
+            dom.sliderSaturation.addEventListener('change', function () {
+                deviceInfo.state.s = parseInt(this.value, 10);
+                sendState('slider');
+            });
+
+            // 明度滑块
+            dom.sliderLightness.addEventListener('input', function () {
+                const val = parseInt(this.value, 10);
+                dom.valLightness.textContent = `${val}%`;
+                previewBulbIfRelevant(MODE.RGB, 'l', val);
+            });
+            dom.sliderLightness.addEventListener('change', function () {
+                deviceInfo.state.l = parseInt(this.value, 10);
+                sendState('slider');
+            });
+
+            // =====================================================================
+            // 12. 接收外部设备数据（来自 dataBus）
+            // =====================================================================
+
+            function mergeState(oldState, incomingState) {
+                let parsed = incomingState;
+                if (typeof incomingState === 'string') {
+                    try {
+                        parsed = JSON.parse(incomingState);
+                    } catch (err) {
+                        console.warn('设备 state 解析失败，忽略本次更新:', err, incomingState);
+                        logModule.add('INFO', 'state 数据解析失败，已忽略');
+                        return oldState;
+                    }
+                }
+                if (!parsed || typeof parsed !== 'object') return oldState;
+                ['light', 'mode', 'brightness', 'white', 'h', 's', 'l'].forEach(key => {
+                    if (parsed[key] !== undefined) oldState[key] = parsed[key];
+                });
+                return oldState;
+            }
+
+            function applyCapabilities(capabilities) {
+                const caps = normalizeCapabilities(capabilities);
+                deviceInfo.capabilities = caps;
+                buildModeItems(caps);
+
+                // 若当前模式不在新的能力列表中，自动切换到第一个可用模式
+                const availableModes = caps.map(key => CAPABILITY_TO_MODE[key]);
+                if (!availableModes.includes(deviceInfo.state.mode)) {
+                    deviceInfo.state.mode = availableModes.length > 0 ? availableModes[0] : MODE.SWITCH;
+                }
+            }
+
+            function updateDeviceInfo(data) {
+                try {
+                    updateDeviceInfoUnsafe(data);
+                } catch (err) {
+                    console.error('处理设备数据时出错:', err, data);
+                    logModule.add('INFO', '处理设备数据时出错: ' + err.message);
+                }
+            }
+
+            function updateDeviceInfoUnsafe(data) {
+                console.log('data.online', data.online);
+                console.log('deviceInfo.online', deviceInfo.online);
+                if (data.online !== undefined ) {
+                    deviceInfo.online = data.online;
+                    updatePanelStatus(deviceInfo.online);
+                }
+
+                if (data.name ) {
+                    deviceInfo.name = data.name;
+                    updateDeviceName(deviceInfo.name);
+                }
+
+                if (data.state) {
+                    mergeState(deviceInfo.state, data.state);
+
+                    // 收到设备确认，解除对应的 pending 回退定时器
+                    if (pending.toggle.active) {
+                        clearPendingToggle();
+                        console.log('✅ 开关确认收到，pending 解除');
+                    }
+                    if (pending.slider.active) {
+                        clearPendingSlider();
+                        console.log('✅ 滑块/模式确认收到，pending 解除');
+                    }
+
+                    updateUIFromState(deviceInfo.state);
+                }
+
+                if (data.capabilities) {
+                    applyCapabilities(data.capabilities);
+                }
+
+                // 回写共享缓存，供外部读取（通道名固定，不可更改）
+                if (window.sharedData) {
+                    window.sharedData.device_1_info = deviceInfo;
+                }
+            }
+
+            // =====================================================================
+            // 13. 初始化
+            // =====================================================================
+
+            function initFromSharedData() {
+                const initialInfo = window.sharedData && window.sharedData.device_1_info;
+                if (!initialInfo || typeof initialInfo !== 'object') {
+                    buildModeItems(['switch']);
+                    updateUIFromState(deviceInfo.state);
+                    return;
+                }
+
+                Object.assign(deviceInfo, initialInfo);
+                if (!deviceInfo.state || typeof deviceInfo.state !== 'object') {
+                    deviceInfo.state = { ...DEFAULT_STATE };
+                } else {
+                    // 补全缺失字段，避免上游缓存的数据不完整导致渲染出错
+                    deviceInfo.state = { ...DEFAULT_STATE, ...deviceInfo.state };
+                }
+
+                updateDeviceName(deviceInfo.name);
+                updatePanelStatus(deviceInfo.online);
+                buildModeItems(deviceInfo.capabilities || ['switch']);
+                updateUIFromState(deviceInfo.state);
+
+                console.log('deviceInfo', deviceInfo);
+            }
+
+            // 统一处理 dataBus 事件：先记录 RECE 日志，再更新设备信息
+            function handleDeviceInfoAdvChanged(e) {
+                const data = e && e.detail && e.detail.MyDeviceInfoAdv;
+                if (!data || data.id !== DEVICE_ID) return;
+
+                const display = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+                logModule.add('RECE', display);
+                updateDeviceInfo(data);
+            }
+
+            const DATA_BUS_RETRY_INTERVAL_MS = 200;
+            const DATA_BUS_RETRY_MAX_ATTEMPTS = 25; // 最长约 5 秒，覆盖宿主页面异步创建 dataBus 的情况
+
+            function bindDataBus(attempt) {
+                const bus = window.dataBus;
+                if (bus && typeof bus.addEventListener === 'function') {
+                    bus.addEventListener('MyDeviceInfoAdvChanged', handleDeviceInfoAdvChanged);
+                    return;
+                }
+                const nextAttempt = (attempt || 0) + 1;
+                if (nextAttempt > DATA_BUS_RETRY_MAX_ATTEMPTS) {
+                    console.warn('window.dataBus 未就绪，放弃重试，设备数据将无法自动更新');
+                    return;
+                }
+                setTimeout(() => bindDataBus(nextAttempt), DATA_BUS_RETRY_INTERVAL_MS);
+            }
+
+            logModule.add('INFO', '日志系统已启动，等待通信数据...');
+
+            try {
+                initFromSharedData();
+            } catch (err) {
+                console.error('初始化设备状态失败:', err);
+                logModule.add('INFO', '初始化设备状态失败: ' + err.message);
+            }
+            bindDataBus();
+
+            console.log('✅ Matrix Core 控制器已启动 (增强模式)');
         })();
     </script>
 
