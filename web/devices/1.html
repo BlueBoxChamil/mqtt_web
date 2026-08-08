@@ -734,35 +734,67 @@
             }
 
 
-            function updateDeviceInfo(newData) {
-                // 首次调用时初始化为空对象
-                if (device_info === null) {
-                    device_info = {};
+            function updateDeviceInfo(data) {
+                if (isValidDeviceData(data, 'online') && data.online !== device_info.online) {
+                    device_info.online = data.online;
+                    console.log('已更新在线状态:', device_info.online);
+                    updatePanelStatus(device_info.online);
                 }
-                // 遍历新数据的所有属性
-                for (const key in newData) {
-                    if (newData.hasOwnProperty(key)) {
-                        const value = newData[key];
-                        // 更新或新增属性
-                        device_info[key] = value;
-                        // 根据 key 打印对应信息
-                        if (key === 'id') {
-                            console.log('ID:', value);
-                        } else if (key === 'name') {
-                            console.log('Name:', value);
-                            updateDeviceName(value);
-                        }
-                        else if (key === 'online') {
-                            console.log('online:', value);
-                            updatePanelStatus(value);
-                        }
-                        else if (key === 'state') {
-                            console.log('state:', value);
-                            updateUIFromState(value);
-                            currentState = value;
-                        }
+
+                if (isValidDeviceData(data, 'name') && data.name !== device_info.name) {
+                    device_info.name = data.name;
+                    console.log('已更新设备名字:', device_info.name);
+                    updateDeviceName(device_info.name);
+                }
+
+                if (isValidDeviceData(data, 'state')) {
+                    const ds = data.state;
+                    const devState = device_info.state;
+
+                    if (isValidDeviceData(ds, 'mode') && ds.mode !== devState.mode) {
+                        devState.mode = ds.mode;
                     }
+                    if (isValidDeviceData(ds, 'light') && ds.light !== devState.light) {
+                        devState.light = ds.light;
+                    }
+                    if (isValidDeviceData(ds, 'brightness') && ds.brightness !== devState.brightness) {
+                        devState.brightness = ds.brightness;
+                    }
+                    if (isValidDeviceData(ds, 'h') &&
+                        isValidDeviceData(ds, 's') &&
+                        isValidDeviceData(ds, 'l')) {
+                        if (ds.h !== devState.h) {
+                            devState.h = ds.h;
+                        }
+                        if (ds.s !== devState.s) {
+                            devState.s = ds.s;
+                        }
+                        if (ds.l !== devState.l) {
+                            devState.l = ds.l;
+                        }
+
+                    }
+                    if (isValidDeviceData(ds, 'white') && ds.white !== devState.white) {
+                        devState.white = ds.white;
+                    }
+                    updateUIFromState(device_info.state);
+                    // 🔽 关键修复：同步清除 pending 状态，防止超时回退
+                    if (togglePending) {
+                        togglePending = false;
+                        toggleTrack.classList.remove('pending');
+                        if (toggleTimer) { clearTimeout(toggleTimer); toggleTimer = null; }
+                        console.log('✅ 通过 MyDeviceInfoAdv 确认开关，pending 解除');
+                    }
+                    if (sliderPending) {
+                        sliderPending = false;
+                        if (sliderTimer) { clearTimeout(sliderTimer); sliderTimer = null; }
+                        console.log('✅ 通过 MyDeviceInfoAdv 确认滑块，pending 解除');
+                    }
+                    // 同步 lastSyncedState，保持一致性
+                    lastSyncedState = { ...device_info.state };
                 }
+
+                window.sharedData.device_1_info = device_info;
             }
 
             // 监听共享数据更新名称
@@ -774,37 +806,7 @@
                         return;
 
                     console.log('请求更新设备信息:', data);
-
-                    if (isValidDeviceData(data, 'online') && data.online !== device_info.online) {
-                        console.log('已更新在线状态:', data.online);
-                        updatePanelStatus(data.online);
-                    }
-
-                    if (isValidDeviceData(data, 'name') && data.name !== device_info.name) {
-                        console.log('已更新设备名字:', data.name);
-                        updateDeviceName(data.name);
-                    }
-
-                    if (isValidDeviceData(data, 'state') && data.state !== currentState) {
-                        currentState = data.state;
-                        console.log('已更新设备state:', data.state);
-                        updateUIFromState(data.state);
-
-                        // 🔽 关键修复：同步清除 pending 状态，防止超时回退
-                        if (togglePending) {
-                            togglePending = false;
-                            toggleTrack.classList.remove('pending');
-                            if (toggleTimer) { clearTimeout(toggleTimer); toggleTimer = null; }
-                            console.log('✅ 通过 MyDeviceInfoAdv 确认开关，pending 解除');
-                        }
-                        if (sliderPending) {
-                            sliderPending = false;
-                            if (sliderTimer) { clearTimeout(sliderTimer); sliderTimer = null; }
-                            console.log('✅ 通过 MyDeviceInfoAdv 确认滑块，pending 解除');
-                        }
-                        // 同步 lastSyncedState，保持一致性
-                        lastSyncedState = { ...currentState };
-                    }
+                    updateDeviceInfo(data);
 
                 });
             }
@@ -872,7 +874,7 @@
             const valLight = document.getElementById('valLightness');
 
             // 状态
-            let currentState = {
+            let lastSyncedState = {
                 light: 1,
                 mode: 2,
                 h: 30,
@@ -881,7 +883,6 @@
                 brightness: 100,
                 white: 125
             };
-            let lastSyncedState = { ...currentState };
             let togglePending = false;
             let toggleTimer = null;
             let sliderPending = false;
@@ -926,16 +927,17 @@
 
             function sendState(state) {
                 if (window.sharedData) {
+                    const devState = device_info.state;
                     const payload = {
                         id: 1,
                         state: {
-                            light: currentState.light,
-                            mode: currentState.mode,
-                            h: currentState.h,
-                            s: currentState.s,
-                            l: currentState.l,
-                            brightness: currentState.brightness,
-                            white: currentState.white
+                            light: devState.light,
+                            mode: devState.mode,
+                            h: devState.h,
+                            s: devState.s,
+                            l: devState.l,
+                            brightness: devState.brightness,
+                            white: devState.white
                         },
                     };
                     window.sharedData.MySerAdv = payload;
@@ -949,20 +951,21 @@
                     console.log('⏳ 开关等待确认中，忽略本次点击');
                     return;
                 }
-                lastSyncedState = { ...currentState };
-                const newLight = currentState.light === 1 ? 0 : 1;
+                const devState = device_info.state;
+                lastSyncedState = { ...devState };
+                const newLight = devState.light === 1 ? 0 : 1;
                 togglePending = true;
                 this.classList.add('pending');
-                currentState.light = newLight;
-                sendState(currentState);
+                devState.light = newLight;
+                sendState(devState);
 
                 if (toggleTimer) clearTimeout(toggleTimer);
                 toggleTimer = setTimeout(() => {
                     if (togglePending) {
                         togglePending = false;
                         toggleTrack.classList.remove('pending');
-                        currentState = { ...lastSyncedState };
-                        updateUIFromState(currentState);
+                        devState = { ...lastSyncedState };
+                        updateUIFromState(devState);
                         console.warn('⏰ 开关超时，回退到之前状态');
                     }
                 }, 5000);
@@ -970,84 +973,108 @@
             });
 
             sliderHue.addEventListener('input', function () {
-                currentState.h = parseInt(this.value);
-                valHue.textContent = String(currentState.h).padStart(3, '0') + '°';
-                const hex = hslToHex(currentState.h, currentState.s, currentState.l);
+                const devState = device_info.state;
+                devState.h = parseInt(this.value);
+                valHue.textContent = String(devState.h).padStart(3, '0') + '°';
+                const hex = hslToHex(devState.h, devState.s, devState.l);
                 hexReadout.textContent = hex;
                 dot.style.backgroundColor = hex;
                 dot.style.boxShadow = `0 0 80px ${hex}80`;
                 glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
             });
             sliderHue.addEventListener('change', function () {
+                const devState = device_info.state;
                 if (sliderPending) { clearTimeout(sliderTimer); sliderPending = false; }
                 sliderRevertState = { ...lastSyncedState };
-                sendState(currentState);
+                sendState(devState);
                 sliderPending = true;
                 sliderTimer = setTimeout(() => {
                     if (sliderPending) {
                         sliderPending = false;
-                        currentState = { ...sliderRevertState };
-                        updateUIFromState(currentState);
+                        devState = { ...sliderRevertState };
+                        updateUIFromState(devState);
                         console.warn('⏰ 滑块超时，回退到之前状态');
                     }
                 }, 5000);
-                console.log('📤 色相已发送:', currentState.h, '，等待确认...');
+                console.log('📤 色相已发送:', devState.h, '，等待确认...');
             });
 
             sliderSat.addEventListener('input', function () {
-                currentState.s = parseInt(this.value);
-                valSat.textContent = currentState.s + '%';
-                const hex = hslToHex(currentState.h, currentState.s, currentState.l);
+                const devState = device_info.state;
+                devState.s = parseInt(this.value);
+                valSat.textContent = devState.s + '%';
+                const hex = hslToHex(devState.h, devState.s, devState.l);
                 hexReadout.textContent = hex;
                 dot.style.backgroundColor = hex;
                 dot.style.boxShadow = `0 0 80px ${hex}80`;
                 glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
             });
             sliderSat.addEventListener('change', function () {
+                const devState = device_info.state;
                 if (sliderPending) { clearTimeout(sliderTimer); sliderPending = false; }
                 sliderRevertState = { ...lastSyncedState };
-                sendState(currentState);
+                sendState(devState);
                 sliderPending = true;
                 sliderTimer = setTimeout(() => {
                     if (sliderPending) {
                         sliderPending = false;
-                        currentState = { ...sliderRevertState };
-                        updateUIFromState(currentState);
+                        devState = { ...sliderRevertState };
+                        updateUIFromState(devState);
                         console.warn('⏰ 滑块超时，回退到之前状态');
                     }
                 }, 5000);
-                console.log('📤 饱和度已发送:', currentState.s, '，等待确认...');
+                console.log('📤 饱和度已发送:', devState.s, '，等待确认...');
             });
 
             sliderLight.addEventListener('input', function () {
-                currentState.l = parseInt(this.value);
-                valLight.textContent = currentState.l + '%';
-                const hex = hslToHex(currentState.h, currentState.s, currentState.l);
+                const devState = device_info.state;
+                devState.l = parseInt(this.value);
+                valLight.textContent = devState.l + '%';
+                const hex = hslToHex(devState.h, devState.s, devState.l);
                 hexReadout.textContent = hex;
                 dot.style.backgroundColor = hex;
                 dot.style.boxShadow = `0 0 80px ${hex}80`;
                 glow.style.background = `radial-gradient(circle, ${hex}30, transparent 55%)`;
             });
             sliderLight.addEventListener('change', function () {
+                const devState = device_info.state;
                 if (sliderPending) { clearTimeout(sliderTimer); sliderPending = false; }
                 sliderRevertState = { ...lastSyncedState };
-                sendState(currentState);
+                sendState(devState);
                 sliderPending = true;
                 sliderTimer = setTimeout(() => {
                     if (sliderPending) {
                         sliderPending = false;
-                        currentState = { ...sliderRevertState };
-                        updateUIFromState(currentState);
+                        devState = { ...sliderRevertState };
+                        updateUIFromState(devState);
                         console.warn('⏰ 滑块超时，回退到之前状态');
                     }
                 }, 5000);
-                console.log('📤 明度已发送:', currentState.l, '，等待确认...');
+                console.log('📤 明度已发送:', devState.l, '，等待确认...');
             });
 
 
 
             // 初始化 UI
-            let device_info = null;
+            let device_info = {
+                id: 0,
+                name: null,
+                online: null,
+                capabilities: null,
+                fw_version: null,
+                mac: null,
+                model: null,
+                state: {
+                    light: 1,
+                    mode: 2,
+                    h: 30,
+                    s: 75,
+                    l: 50,
+                    brightness: 100,
+                    white: 125
+                },
+                type: null,
+            };
             updateDeviceInfo(window.sharedData.device_1_info);
             if (device_info) {
                 console.log('初始设备信息:', device_info);

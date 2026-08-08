@@ -584,7 +584,7 @@
             //因为如果没有打开子页面却传入了多个设备信息，最开始的信息会丢失
         }, bus);
 
-        const requiredFields = ['name', 'online', 'capabilities', 'fw_version', 'mac', 'model', 'state', 'type'];
+        const requiredFields = ['name', 'online', 'capabilities', 'fw_version', 'mac', 'model', 'type'];
 
         function isValidDeviceData(data, ...fieldNames) {
             // 如果第一个参数是数组，则将其展开为字段列表
@@ -635,14 +635,22 @@
 
             // 这里用于更新页面初始化参数
             if (data.id === 1) {
+                const info = window.sharedData.device_1_info;
                 // 如果存在字段会更新 device_1_info 初始值
                 // device_1_info 是子页面初始值不参与实时更新
                 requiredFields.forEach(field => {
                     if (isValidDeviceData(data, field)) {
-                        window.sharedData.device_1_info[field] = data[field];
-                        console.log('ddd:', data[field]);
+                        info[field] = data[field];
+                        // console.log('设备1初始化设备信息:', data[field]);
                     }
                 });
+
+                // 3. 【特殊处理】state：仅当 device_1_info 中还没有 state 时才写入初始值
+                //    这样后续开关灯、调色等高频操作不会污染 device_1_info 的“初始状态”
+                if (isValidDeviceData(data, 'state') && !info.state) {
+                    info.state = data.state;
+                    // console.log('设备1初始化state信息:', data.state);
+                }
 
             }
 
